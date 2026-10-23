@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>コンテキスト録音</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="録音メモ">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="backBtn" class="icon-btn hidden" aria-label="戻る">‹</button>
+  <h1 id="viewTitle">コンテキスト録音</h1>
+  <button id="settingsBtn" class="icon-btn" aria-label="設定">⚙︎</button>
+</header>
+
+<main>
+  <!-- 一覧 -->
+  <section id="view-list" class="view">
+    <div class="searchbar">
+      <input id="searchInput" type="search" placeholder="タイトル・文字起こし・メモを検索" autocomplete="off">
+    </div>
+    <div id="tagFilter" class="chips scroll-x"></div>
+    <div id="listMeta" class="meta"></div>
+    <ul id="recList" class="rec-list"></ul>
+    <div id="emptyState" class="empty hidden">
+      <p>まだ録音がありません。</p>
+      <p>下の赤いボタンで録音を始めましょう。</p>
+    </div>
+  </section>
+
+  <!-- 録音中 -->
+  <section id="view-record" class="view hidden">
+    <div class="rec-status">
+      <div id="recTimer" class="timer">00:00</div>
+      <div id="recState" class="rec-state">準備中…</div>
+      <canvas id="levelMeter" width="300" height="48"></canvas>
+    </div>
+    <div class="live-box">
+      <div class="live-head">
+        <span>ライブ文字起こし</span>
+        <span id="sttState" class="badge"></span>
+      </div>
+      <div id="liveTranscript" class="live-text"><span class="final"></span><span class="interim"></span></div>
+    </div>
+    <div class="rec-controls">
+      <button id="pauseBtn" class="btn secondary">一時停止</button>
+      <button id="stopBtn" class="big-btn stop" aria-label="停止して保存"><span></span></button>
+      <button id="cancelBtn" class="btn secondary">破棄</button>
+    </div>
+  </section>
+
+  <!-- 詳細 -->
+  <section id="view-detail" class="view hidden">
+    <label class="field"><span>タイトル</span><input id="dTitle" type="text"></label>
+    <div class="meta" id="dMeta"></div>
+    <audio id="dAudio" controls preload="metadata"></audio>
+    <div class="field">
+      <span>人（タグ）</span>
+      <div class="tag-input" data-kind="people"><div class="chips"></div><input type="text" list="peopleList" placeholder="名前を入力してEnter" enterkeyhint="done"></div>
+    </div>
+    <div class="field">
+      <span>テーマ（タグ）</span>
+      <div class="tag-input" data-kind="themes"><div class="chips"></div><input type="text" list="themesList" placeholder="テーマを入力してEnter" enterkeyhint="done"></div>
+    </div>
+    <datalist id="peopleList"></datalist>
+    <datalist id="themesList"></datalist>
+    <label class="field"><span>メモ</span><textarea id="dMemo" rows="3" placeholder="補足・決まったこと・TODOなど"></textarea></label>
+    <label class="field"><span>文字起こし（編集できます）</span><textarea id="dTranscript" rows="10" placeholder="文字起こしはありません"></textarea></label>
+    <div class="field ai-box">
+      <span>AI要約 <em class="soon">近日対応</em></span>
+      <button id="dSummarize" class="btn secondary" disabled>要約する（準備中）</button>
+    </div>
+    <div class="row">
+      <button id="dShare" class="btn secondary">共有/書き出し</button>
+      <button id="dDelete" class="btn danger">削除</button>
+    </div>
+    <div id="saveState" class="meta center"></div>
+  </section>
+
+  <!-- 設定 -->
+  <section id="view-settings" class="view hidden">
+    <h2>データ</h2>
+    <div class="stack">
+      <button id="exportMd" class="btn">Markdownで書き出し（AI用）</button>
+      <button id="exportJson" class="btn">JSONで書き出し（テキストのみ）</button>
+      <button id="exportJsonAudio" class="btn secondary">JSONで書き出し（音声込み・バックアップ）</button>
+      <label class="btn secondary file-btn">JSONを読み込む<input id="importJson" type="file" accept="application/json,.json" hidden></label>
+      <div id="storageInfo" class="meta"></div>
+    </div>
+    <h2>文字起こし</h2>
+    <div class="stack">
+      <label class="toggle"><input id="sttEnabled" type="checkbox" checked> 録音中にライブ文字起こし（端末の音声認識）</label>
+      <div id="sttSupport" class="meta"></div>
+      <label class="field"><span>文字起こし方式</span>
+        <select id="sttProvider">
+          <option value="webspeech">端末の音声認識（無料・ライブ）</option>
+          <option value="whisper" disabled>Whisper API（高精度）— 近日対応</option>
+        </select>
+      </label>
+    </div>
+    <h2>AI <em class="soon">近日対応</em></h2>
+    <div class="stack">
+      <p class="meta">要約・「先週の会議で何決めた？」のような質問機能を追加予定です。APIキーはこの端末内にのみ保存されます。</p>
+      <label class="field"><span>AIプロバイダ</span>
+        <select id="aiProvider">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="xai">xAI</option>
+        </select>
+      </label>
+      <label class="field"><span>APIキー</span><input id="aiKey" type="password" placeholder="sk-…（まだ使われません）" autocomplete="off"></label>
+      <label class="field"><span>AIに質問（準備中）</span><input type="text" disabled placeholder="例：先週の打ち合わせで決まったことは？"></label>
+    </div>
+    <h2>このアプリについて</h2>
+    <p class="meta">データ（音声・文字起こし）はすべてこのiPhoneのブラウザ内（IndexedDB）に保存されます。Safariの「履歴とWebサイトデータを消去」で消えるので、定期的に書き出してください。</p>
+    <p class="meta" id="versionInfo"></p>
+  </section>
+</main>
+
+<button id="recordBtn" class="big-btn record fab" aria-label="録音開始"><span></span></button>
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

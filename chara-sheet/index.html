@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#1a0a12" />
+<title>キャラシート診断</title>
+<style>
+:root{
+  --bg:#12060c; --card:#1f0d16; --pink:#ff4d8d; --pink2:#ff8fb8; --black:#0a0508;
+  --text:#ffe6f0; --muted:#c9a0b0; --line:#3a1a28; --ok:#7dffb3;
+  --danger:#ff6b8a;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);min-height:100%;}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.app{max-width:440px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:16px 16px 28px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--pink),#7a1040);display:grid;place-items:center;font-weight:800;color:#fff;box-shadow:0 0 20px rgba(255,77,141,.35)}
+.brand h1{font-size:15px;margin:0;letter-spacing:.04em}
+.brand p{margin:2px 0 0;font-size:11px;color:var(--muted)}
+.progress-wrap{height:8px;background:#2a101c;border-radius:99px;overflow:hidden;margin:8px 0 18px}
+.progress{height:100%;width:0;background:linear-gradient(90deg,var(--pink),var(--pink2));transition:width .25s ease}
+.screen{display:none;flex:1;flex-direction:column}
+.screen.active{display:flex}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.label{font-size:12px;color:var(--pink2);letter-spacing:.08em;margin-bottom:6px}
+.q{font-size:20px;font-weight:700;line-height:1.45;margin:0 0 16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;appearance:none;background:#140810;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:14px 14px;font-size:16px}
+input:focus,select:focus{outline:2px solid var(--pink)}
+.options{display:grid;gap:10px}
+.opt{display:block;width:100%;text-align:left;background:#180a12;border:1.5px solid var(--line);color:var(--text);border-radius:16px;padding:16px 14px;font-size:16px;line-height:1.4;transition:transform .08s,border-color .15s,background .15s}
+.opt:active{transform:scale(.98)}
+.opt.selected,.opt:hover{border-color:var(--pink);background:linear-gradient(180deg,#2a1020,#1a0b14)}
+.nav{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;border:none;border-radius:16px;padding:15px 12px;font-size:16px;font-weight:700;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,var(--pink),#c2185b);color:#fff;box-shadow:0 8px 24px rgba(255,77,141,.35)}
+.btn-primary:disabled{opacity:.45}
+.hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+.result-hero{text-align:center;padding:8px 4px 4px}
+.badge{display:inline-block;font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(255,77,141,.15);color:var(--pink2);margin-bottom:10px}
+.title-main{font-size:20px;font-weight:800;line-height:1.4;margin:0 0 8px}
+.sub{font-size:13px;color:var(--muted);line-height:1.55;margin:0 0 14px}
+.mix{display:grid;gap:7px;margin:10px 0 4px}
+.mix-row{display:grid;grid-template-columns:72px 1fr 36px;gap:8px;align-items:center;font-size:11px;color:var(--muted)}
+.mix-bar{height:8px;background:#2a101c;border-radius:99px;overflow:hidden}
+.mix-fill{height:100%;background:linear-gradient(90deg,var(--pink),var(--pink2));border-radius:99px}
+.axes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.axis{background:#160910;border:1px solid var(--line);border-radius:14px;padding:10px}
+.axis .n{font-size:10px;color:var(--muted);margin-bottom:6px}
+.axis .track{height:6px;background:#2a101c;border-radius:99px;position:relative}
+.axis .dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--pink);transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(255,77,141,.6)}
+.axis .ends{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.tag{font-size:11px;padding:6px 10px;border-radius:99px;background:#2a1020;border:1px solid var(--line);color:var(--pink2)}
+.block{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.block h3{margin:0 0 8px;font-size:13px;color:var(--pink2)}
+.item{background:#160910;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.item .k{font-size:10px;color:var(--muted);margin-bottom:3px}
+.item .v{font-size:14px;line-height:1.45;font-weight:600}
+.note{font-size:11px;color:var(--muted);line-height:1.5;margin:10px 0 0}
+.feel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.feel .btn{font-size:14px;padding:13px 8px}
+.feel .btn.on-ok{background:rgba(125,255,179,.15);border:1px solid var(--ok);color:var(--ok)}
+.feel .btn.on-adj{background:rgba(255,77,141,.12);border:1px solid var(--pink);color:var(--pink2)}
+.share{margin-top:12px;display:grid;gap:8px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2a1020;border:1px solid var(--pink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.show{opacity:1}
+.step{font-size:12px;color:var(--muted);margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <div class="logo">♡</div>
+    <div>
+      <h1>キャラシート診断</h1>
+      <p>16問・タップだけ・約2分</p>
+    </div>
+  </div>
+  <div class="progress-wrap"><div class="progress" id="progress"></div></div>
+
+  <section class="screen active" id="screen-start">
+    <div class="card">
+      <div class="label">START</div>
+      <p class="q">まずはニックネームとお店を教えてね</p>
+      <div class="field">
+        <label for="name">ニックネーム（源氏名OK）</label>
+        <input id="name" maxlength="20" placeholder="例：みゆ" autocomplete="nickname" />
+      </div>
+      <div class="field">
+        <label for="store">お店</label>
+        <select id="store">
+          <option value="">選択してね</option>
+          <option>関内 Franc</option>
+          <option>Myu Myu</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btn-start" disabled>はじめる</button>
+      <p class="hint">正解・不正解はないよ。今の自分にいちばん近いものを選んでね。結果はLINEで店長へ。店長が連絡事項グループに貼るとハヤトに届くよ。</p>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-q">
+    <div class="card" style="flex:1;display:flex;flex-direction:column">
+      <div class="step" id="q-step">Q1 / 16</div>
+      <p class="q" id="q-text"></p>
+      <div class="options" id="q-options"></div>
+      <div class="nav">
+        <button class="btn btn-ghost" id="btn-back">戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-result">
+    <div class="card result-hero">
+      <div class="badge" id="r-badge">診断結果</div>
+      <h2 class="title-main" id="r-title"></h2>
+      <p class="sub" id="r-desc"></p>
+      <div class="tags" id="r-tags"></div>
+      <div class="axes" id="r-axes"></div>
+      <div class="block" style="border:none;padding-top:0;margin-top:4px">
+        <h3 style="text-align:left">配合（参考）</h3>
+        <div class="mix" id="r-mix"></div>
+        <p class="note" style="text-align:left">※配合は今回の回答の傾向で、性格の確率や指名の予測ではないよ。低い項目は弱みじゃなくて、今回あまり出てこなかった傾向だよ。</p>
+      </div>
+      <div class="block" style="text-align:left">
+        <h3>明日から使える道具</h3>
+        <div class="item"><div class="k">自己紹介の一言</div><div class="v" id="r-intro"></div></div>
+        <div class="item"><div class="k">口ぐせ</div><div class="v" id="r-catch"></div></div>
+        <div class="item"><div class="k">決めポーズ（チェキ用）</div><div class="v" id="r-pose"></div></div>
+        <div class="item"><div class="k">SNS投稿の型</div><div class="v" id="r-sns"></div></div>
+        <div class="item"><div class="k">明日試す一言</div><div class="v" id="r-tomorrow"></div></div>
+        <div class="item"><div class="k">プロフィール文のたたき台</div><div class="v" id="r-profile"></div></div>
+      </div>
+      <div class="block" style="text-align:left">
+        <h3>この結果、しっくりくる？</h3>
+        <div class="feel">
+          <button class="btn btn-ghost" id="feel-ok">しっくりくる</button>
+          <button class="btn btn-ghost" id="feel-adj">調整したい</button>
+        </div>
+        <p class="note">キャラは固定じゃないよ。しっくりきたら伸ばす、ズレてたら一緒に調整するだけ。</p>
+      </div>
+      <div class="share">
+        <button class="btn btn-primary" id="btn-line">LINEで店長に送る</button>
+        <button class="btn btn-ghost" id="btn-copy">結果をコピー</button>
+        <p class="hint" id="submit-status">店長に送ったら、連絡事項のLINEグループへそのまま貼ってもらってね。</p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const TYPES = ["小悪魔","妹","お姉さん","天然","ツンデレ","元気","クール","癒し","王道・正統派"];
+const QUESTIONS = [
+  {q:"初めて会う人には？", opts:[
+    {t:"自分から話しかける", w:{元気:2,小悪魔:1,"王道・正統派":1}},
+    {t:"相手を待つ", w:{クール:2,癒し:1,ツンデレ:1}},
+    {t:"とりあえず笑顔", w:{癒し:2,"王道・正統派":2,妹:1}},
+    {t:"ちょっと警戒する", w:{クール:2,ツンデレ:1,お姉さん:1}}
+  ]},
+  {q:"友達からよく言われるのは？", opts:[
+    {t:"「あざとい」", w:{小悪魔:3,妹:1}},
+    {t:"「しっかりしてる」", w:{お姉さん:3,"王道・正統派":2,クール:1}},
+    {t:"「ふわふわしてる」", w:{天然:3,癒し:1,妹:1}},
+    {t:"「元気すぎ」", w:{元気:3,妹:1}}
+  ]},
+  {q:"褒められたら？", opts:[
+    {t:"素直に喜ぶ", w:{元気:2,"王道・正統派":2,癒し:1}},
+    {t:"「知ってる♡」と返す", w:{小悪魔:3,お姉さん:1}},
+    {t:"照れて否定する", w:{ツンデレ:3,妹:1}},
+    {t:"さらっと流す", w:{クール:3,お姉さん:1}}
+  ]},
+  {q:"怒るとどうなる？", opts:[
+    {t:"黙る", w:{クール:2,ツンデレ:2}},
+    {t:"すぐ顔に出る", w:{元気:2,天然:1,妹:1}},
+    {t:"すねる", w:{妹:3,ツンデレ:1,小悪魔:1}},
+    {t:"怒らない", w:{癒し:3,お姉さん:1,"王道・正統派":1}}
+  ]},
+  {q:"休みの日は？", opts:[
+    {t:"外で遊ぶ", w:{元気:3,小悪魔:1}},
+    {t:"家でゴロゴロ", w:{癒し:2,天然:2,クール:1}},
+    {t:"自分磨き", w:{お姉さん:2,"王道・正統派":2,小悪魔:1}},
+    {t:"推し活", w:{妹:2,天然:1,癒し:1,小悪魔:1}}
+  ]},
+  {q:"お客さんとの会話で得意なのは？", opts:[
+    {t:"いじる", w:{小悪魔:3,お姉さん:1}},
+    {t:"聞き役", w:{癒し:3,お姉さん:1,"王道・正統派":1}},
+    {t:"甘える", w:{妹:3,小悪魔:1}},
+    {t:"盛り上げる", w:{元気:3,天然:1}}
+  ]},
+  {q:"初めてのお客さんに一番出したい印象は？", opts:[
+    {t:"可愛い", w:{"王道・正統派":3,妹:2,癒し:1}},
+    {t:"話しやすい", w:{癒し:2,お姉さん:2,元気:1}},
+    {t:"ドキッとさせる", w:{小悪魔:3,クール:1,ツンデレ:1}},
+    {t:"元気をもらえる", w:{元気:3,妹:1}}
+  ]},
+  {q:"指名してもらいたい時、自然にやってるのは？", opts:[
+    {t:"ちょっと特別扱いする", w:{小悪魔:2,お姉さん:2,癒し:1}},
+    {t:"気遣う", w:{お姉さん:3,癒し:2,"王道・正統派":1}},
+    {t:"素っ気なくして引く", w:{ツンデレ:3,クール:2}},
+    {t:"ずっとテンション高く", w:{元気:3,天然:1}}
+  ]},
+  {q:"苦手なお客さんには？", opts:[
+    {t:"上手に転がす", w:{小悪魔:3,お姉さん:2}},
+    {t:"我慢して合わせる", w:{"王道・正統派":2,お姉さん:2,癒し:1}},
+    {t:"ちょっと距離を置く", w:{クール:3,ツンデレ:1}},
+    {t:"天然でかわす", w:{天然:3,妹:1}}
+  ]},
+  {q:"お客さんが落ち込んでたら？", opts:[
+    {t:"一緒に泣く", w:{妹:2,癒し:2}},
+    {t:"アドバイスする", w:{お姉さん:3,クール:1,"王道・正統派":1}},
+    {t:"笑わせる", w:{元気:3,天然:1,小悪魔:1}},
+    {t:"ただ横にいる", w:{癒し:3,クール:1}}
+  ]},
+  {q:"好きな服の系統は？", opts:[
+    {t:"地雷・量産系", w:{小悪魔:2,妹:2,ツンデレ:1}},
+    {t:"清楚系", w:{"王道・正統派":3,癒し:2,お姉さん:1}},
+    {t:"ストリート・カジュアル", w:{元気:2,クール:2,天然:1}},
+    {t:"大人っぽい", w:{お姉さん:3,クール:1,小悪魔:1}}
+  ]},
+  {q:"写真で一番自信がある顔は？", opts:[
+    {t:"上目づかい", w:{妹:2,小悪魔:2,ツンデレ:1}},
+    {t:"笑顔", w:{"王道・正統派":3,元気:2,癒し:1}},
+    {t:"真顔", w:{クール:3,お姉さん:1}},
+    {t:"変顔", w:{天然:3,元気:2}}
+  ]},
+  {q:"好きな人ができたら？", opts:[
+    {t:"自分から攻める", w:{元気:2,小悪魔:2,お姉さん:1}},
+    {t:"相手に追わせる", w:{小悪魔:3,ツンデレ:2}},
+    {t:"尽くす", w:{癒し:2,妹:2,"王道・正統派":1,お姉さん:1}},
+    {t:"気づかないふり", w:{天然:3,クール:1,ツンデレ:1}}
+  ]},
+  {q:"自分に近い動物は？", opts:[
+    {t:"猫", w:{クール:2,ツンデレ:2,小悪魔:1}},
+    {t:"子犬", w:{元気:2,妹:2,癒し:1}},
+    {t:"うさぎ", w:{癒し:2,妹:2,"王道・正統派":1,天然:1}},
+    {t:"狐", w:{小悪魔:3,お姉さん:1,クール:1}}
+  ]},
+  {q:"本当はどう見られたい？", opts:[
+    {t:"守りたくなる子", w:{妹:3,癒し:1,天然:1}},
+    {t:"憧れられる子", w:{"王道・正統派":3,お姉さん:2,クール:1}},
+    {t:"ほっとける子じゃない", w:{小悪魔:3,ツンデレ:1,元気:1}},
+    {t:"一緒にいて楽しい子", w:{元気:2,癒し:2,天然:1,"王道・正統派":1}}
+  ]},
+  {q:"やりたくないキャラは？", opts:[
+    {t:"ぶりっ子", exclude:["妹","小悪魔"]},
+    {t:"クール系", exclude:["クール","ツンデレ"]},
+    {t:"いじられ役", exclude:["天然"]},
+    {t:"特になし", exclude:[]}
+  ]}
+];
+
+const GAP_PREF = {
+  "小悪魔":["癒し","妹","王道・正統派","ツンデレ"],
+  "妹":["クール","お姉さん","小悪魔","ツンデレ"],
+  "お姉さん":["妹","天然","元気","ツンデレ"],
+  "天然":["クール","お姉さん","小悪魔","ツンデレ"],
+  "ツンデレ":["癒し","妹","元気","王道・正統派"],
+  "元気":["クール","お姉さん","ツンデレ","癒し"],
+  "クール":["元気","妹","癒し","ツンデレ"],
+  "癒し":["小悪魔","クール","元気","ツンデレ"],
+  "王道・正統派":["小悪魔","天然","ツンデレ","クール"]
+};
+
+const TITLE_MAP = {
+  "小悪魔|癒し":"小悪魔×癒しの、甘やかすいたずらっ子",
+  "小悪魔|妹":"小悪魔×妹の、あざと甘えんぼ",
+  "小悪魔|王道・正統派":"小悪魔×王道の、清楚に見えるやんちゃ",
+  "小悪魔|ツンデレ":"小悪魔×ツンデレの、あざと塩対応",
+  "妹|クール":"妹×クールの、塩対応あまあま",
+  "妹|お姉さん":"妹×お姉さんの、甘え上手なお世話焼き",
+  "妹|小悪魔":"妹×小悪魔の、守ってほしいあざとっ子",
+  "妹|ツンデレ":"妹×ツンデレの、すねても甘い子",
+  "お姉さん|妹":"お姉さん×妹の、世話焼き甘えんぼ",
+  "お姉さん|天然":"お姉さん×天然の、しっかりふわふわ",
+  "お姉さん|元気":"お姉さん×元気の、引っ張るムードメーカー",
+  "お姉さん|ツンデレ":"お姉さん×ツンデレの、面倒見いい照れ屋",
+  "天然|クール":"天然×クールの、ぽんこつクール",
+  "天然|お姉さん":"天然×お姉さんの、ふわふわお姉さん",
+  "天然|小悪魔":"天然×小悪魔の、無自覚あざと",
+  "天然|ツンデレ":"天然×ツンデレの、天然なのにつんつん",
+  "ツンデレ|癒し":"ツンデレ×癒しの、照れ隠しの安心感",
+  "ツンデレ|妹":"ツンデレ×妹の、すねても甘い",
+  "ツンデレ|元気":"ツンデレ×元気の、ぶつくさ明るい",
+  "ツンデレ|王道・正統派":"ツンデレ×王道の、清楚なのに照れ屋",
+  "元気|クール":"元気×クールの、はしゃいでも芯が強い",
+  "元気|お姉さん":"元気×お姉さんの、盛り上げお世話役",
+  "元気|ツンデレ":"元気×ツンデレの、明るいつんつん",
+  "元気|癒し":"元気×癒しの、太陽みたいな安心感",
+  "クール|元気":"クール×元気の、寡黙なムードメーカー",
+  "クール|妹":"クール×妹の、塩対応だけど甘えたい",
+  "クール|癒し":"クール×癒しの、静かで安心できる人",
+  "クール|ツンデレ":"クール×ツンデレの、距離感のある甘さ",
+  "癒し|小悪魔":"癒し×小悪魔の、安心させてからかう子",
+  "癒し|クール":"癒し×クールの、穏やかでミステリアス",
+  "癒し|元気":"癒し×元気の、ほっとする太陽",
+  "癒し|ツンデレ":"癒し×ツンデレの、やさしい照れ屋",
+  "王道・正統派|小悪魔":"王道×小悪魔の、正統派に見えるいたずら",
+  "王道・正統派|天然":"王道×天然の、清楚ふわふわ",
+  "王道・正統派|ツンデレ":"王道×ツンデレの、綺麗なのに照れ屋",
+  "王道・正統派|クール":"王道×クールの、清楚ミステリアス"
+};
+
+const STRENGTH = {
+  "小悪魔":"距離の駆け引きと「特別感」を作るのが得意",
+  "妹":"守られたい空気と甘えでリピートを誘いやすい",
+  "お姉さん":"気配りとリードで場を安定させやすい",
+  "天然":"予想外の反応で印象に残りやすい",
+  "ツンデレ":"ギャップで記憶に残る（メインの味付け向き）",
+  "元気":"場を明るくして初対面の硬さをほぐしやすい",
+  "クール":"ミステリアスさと落ち着きで差別化しやすい",
+  "癒し":"安心感で長居・相談されやすい",
+  "王道・正統派":"誰にでも好かれやすい土台の可愛さ"
+};
+
+const KIT = {
+  "小悪魔":{intro:"今日の担当は、ちょっと意地悪な♡（名前）だよ", catch:"ふふ、バレてる？", pose:"指を唇に当てて上目づかい", sns:"「今日は特別に…」系の匂わせ投稿", tomorrow:"常連さんに『今日だけ特別扱いだよ』と一言", profile:"あざとさ全開の小悪魔。いじったり特別扱いしたり、距離感で遊んじゃうタイプ。"},
+  "妹":{intro:"（名前）だよ、今日も甘えていい？", catch:"ねぇ、見てて〜", pose:"両手で頬を挟んで首かしげ", sns:"日常の小さな甘え報告", tomorrow:"『今日も隣いてね』を一回だけ言う", profile:"守りたくなる妹気質。甘えとすねを上手に使って、そばにいたくなる子。"},
+  "お姉さん":{intro:"今日の案内役、（名前）です。任せて", catch:"大丈夫、私がいるよ", pose:"軽いウインク＋胸の前でOKサイン", sns:"お世話・気遣いエピソード", tomorrow:"新人さんや初回来店に一声かける", profile:"しっかり者のお姉さん。気遣いとリードで、居心地のいい席を作るタイプ。"},
+  "天然":{intro:"え、自己紹介？あ、（名前）です！", catch:"あっ、いまなに話してたっけ", pose:"変顔一歩手前の本気真顔→笑顔", sns:"ぽんこつ日常ネタ", tomorrow:"本気で聞き間違えて笑いにする", profile:"ふわふわ天然。予想外の一言で空気がほぐれる、いじられ上手（でも嫌いならなし）。"},
+  "ツンデレ":{intro:"べ、別に指名してほしいわけじゃないし…（名前）", catch:"…まあ、いいけど", pose:"そっぽ向いてからチラ見", sns:"ぶつくさ→最後に甘いオチ", tomorrow:"一度素っ気なくして、最後に笑う", profile:"つんとしつつ甘い。ギャップが武器のタイプ。メインの味付けにすると映える。"},
+  "元気":{intro:"やっほー！今日の元気担当（名前）だよ〜！", catch:"いけるいける！", pose:"両手ピースでジャンプ気味", sns:"ハイテンションな出勤報告", tomorrow:"入店直後に場を明るくする一言", profile:"太陽みたいな元気っ子。初対面でも空気を明るくして、楽しい席を作るタイプ。"},
+  "クール":{intro:"（名前）。今日もよろしく", catch:"…ふうん", pose:"真顔でカメラ目線、小さく微笑", sns:"短文＋雰囲気写真", tomorrow:"言葉少なめでも視線で返す", profile:"クールでミステリアス。少ない言葉でも余韻を残すタイプ。"},
+  "癒し":{intro:"今日はゆっくりしていってね。（名前）です", catch:"大丈夫だよ", pose:"両手を重ねてやさしく微笑", sns:"ほっとする日常・共感投稿", tomorrow:"落ち込んでそうな人の隣で聞き役に", profile:"そばにいると安心する癒し系。聞き上手で、長居したくなる空気をつくるタイプ。"},
+  "王道・正統派":{intro:"はじめまして、（名前）です。よろしくお願いします", catch:"えへへ、ありがとう", pose:"両手を前で揃えて天使スマイル", sns:"清楚かわいい出勤・日常写真", tomorrow:"入店時の笑顔をいつもより1秒長く", profile:"王道のかわいいが得意。誰にでも好かれやすい、正統派の印象を大切にするタイプ。"}
+};
+
+const state = {
+  name:"", store:"", qi:0, answers:Array(16).fill(null), feel:"", result:null
+};
+
+const $ = (id)=>document.getElementById(id);
+const toast = (m)=>{const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800)};
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(id).classList.add("active");
+  const p = id==="screen-start"?0: id==="screen-result"?100: ((state.qi)/16)*100;
+  $("progress").style.width = p+"%";
+}
+
+function validateStart(){
+  $("btn-start").disabled = !($("name").value.trim() && $("store").value);
+}
+$("name").addEventListener("input", validateStart);
+$("store").addEventListener("change", validateStart);
+$("btn-start").addEventListener("click", ()=>{
+  state.name = $("name").value.trim();
+  state.store = $("store").value;
+  state.qi = 0;
+  renderQ();
+  show("screen-q");
+});
+
+function renderQ(){
+  const i = state.qi;
+  const Q = QUESTIONS[i];
+  $("q-step").textContent = `Q${i+1} / 16`;
+  $("q-text").textContent = Q.q;
+  $("progress").style.width = ((i)/16*100)+"%";
+  const box = $("q-options");
+  box.innerHTML = "";
+  Q.opts.forEach((o, oi)=>{
+    const b = document.createElement("button");
+    b.className = "opt" + (state.answers[i]===oi?" selected":"");
+    b.textContent = o.t;
+    b.onclick = ()=>{
+      state.answers[i]=oi;
+      [...box.children].forEach(c=>c.classList.remove("selected"));
+      b.classList.add("selected");
+      setTimeout(()=>{
+        if(i<15){ state.qi=i+1; renderQ(); }
+        else { finish(); }
+      }, 160);
+    };
+    box.appendChild(b);
+  });
+  $("btn-back").onclick = ()=>{
+    if(i===0){ show("screen-start"); return; }
+    state.qi=i-1; renderQ();
+  };
+}
+
+function score(){
+  const scores = Object.fromEntries(TYPES.map(t=>[t,0]));
+  for(let i=0;i<15;i++){
+    const oi = state.answers[i];
+    if(oi==null) continue;
+    const w = QUESTIONS[i].opts[oi].w || {};
+    Object.entries(w).forEach(([k,v])=>{ scores[k]=(scores[k]||0)+v; });
+  }
+  const ex = QUESTIONS[15].opts[state.answers[15]].exclude || [];
+  ex.forEach(t=>{ scores[t] = Math.max(0, (scores[t]||0) - 4); });
+
+  const ranked = TYPES.slice().sort((a,b)=>scores[b]-scores[a] || TYPES.indexOf(a)-TYPES.indexOf(b));
+  let main = ranked[0];
+  // Prefer ツンデレ as gap (flavor), not main, when close
+  if(main==="ツンデレ" && ranked[1] && scores[ranked[1]] >= scores[main]-1){
+    main = ranked[1];
+  }
+  const prefs = GAP_PREF[main] || ranked.slice(1);
+  let gap = null;
+  for(const p of prefs){
+    if(p!==main && scores[p]>0){ gap=p; break; }
+  }
+  if(!gap){
+    gap = ranked.find(t=>t!==main) || "癒し";
+  }
+  // If ツンデレ is strong and not main, prefer it as gap
+  if(main!=="ツンデレ" && scores["ツンデレ"]>=scores[gap] && scores["ツンデレ"]>0){
+    // only if contrast-ish or tied-ish
+    if((GAP_PREF[main]||[]).includes("ツンデレ") || scores["ツンデレ"]>=scores[gap]) gap="ツンデレ";
+  }
+
+  const total = TYPES.reduce((s,t)=>s+scores[t],0) || 1;
+  const pct = Object.fromEntries(TYPES.map(t=>[t, Math.round(scores[t]/total*100)]));
+  // normalize to 100
+  let diff = 100 - TYPES.reduce((s,t)=>s+pct[t],0);
+  if(diff!==0) pct[main] = Math.max(0, pct[main]+diff);
+
+  const title = TITLE_MAP[`${main}|${gap}`] || `${main}×${gap}の、あなたらしい配合`;
+  const tags = deriveTags();
+  const axes = deriveAxes();
+  const kitMain = KIT[main];
+  const kitGap = KIT[gap];
+  const name = state.name;
+  const intro = kitMain.intro.replace("（名前）", name);
+  const catchp = kitMain.catch;
+  const pose = kitMain.pose + (gap==="ツンデレ" || gap!==main ? ` ／ ギャップで${kitGap.pose}` : "");
+  const sns = `${kitMain.sns}（ときどき${kitGap.sns}でギャップ）`;
+  const tomorrow = kitMain.tomorrow;
+  const profile = `${kitMain.profile} たまに${gap}っぽさも混ざるのがポイント。キャラは固定じゃなくて、今日の傾向だよ。`;
+  const desc = `メインは「${main}」、ギャップは「${gap}」。${STRENGTH[main]}。${gap}の要素で味が変わるよ。`;
+
+  return {scores,pct,ranked,main,gap,title,tags,axes,intro,catch:catchp,pose,sns,tomorrow,profile,desc,
+    top3: ranked.slice(0,3).map(t=>({t, p:pct[t]}))};
+}
+
+function deriveTags(){
+  const a = state.answers;
+  const tags=[];
+  const t = (qi)=> QUESTIONS[qi].opts[a[qi]].t;
+  if(t(4)==="推し活" && (t(5)==="聞き役" || t(9)==="一緒に泣く")) tags.push("オタク・共感トーク型");
+  if(t(5)==="盛り上げる" || t(9)==="笑わせる" || t(11)==="変顔") tags.push("おもしろ・芸人型");
+  if(t(5)==="甘える" || t(7)==="ちょっと特別扱いする") tags.push("甘え・特別扱い型");
+  if(t(5)==="聞き役" || t(9)==="ただ横にいる") tags.push("聞き上手・癒し型");
+  if(t(5)==="いじる" || t(8)==="上手に転がす") tags.push("いじり・駆け引き型");
+  if(t(7)==="気遣う" || t(9)==="アドバイスする") tags.push("気遣いお姉さん型");
+  if(t(7)==="素っ気なくして引く" || t(2)==="照れて否定する") tags.push("塩対応ギャップ型");
+  if(!tags.length) tags.push("バランス型");
+  return [...new Set(tags)].slice(0,3);
+}
+
+function deriveAxes(){
+  // 距離感: 甘える(0) ↔ 引っ張る(100)
+  // テンション: 低い(0) ↔ 高い(100)
+  let dist=50, ten=50;
+  const pick=(qi)=>QUESTIONS[qi].opts[state.answers[qi]].t;
+  // distance
+  if(pick(5)==="甘える") dist-=25;
+  if(pick(5)==="いじる") dist+=20;
+  if(pick(5)==="盛り上げる") dist+=10;
+  if(pick(5)==="聞き役") dist-=10;
+  if(pick(7)==="素っ気なくして引く") dist+=25;
+  if(pick(7)==="ちょっと特別扱いする") dist-=10;
+  if(pick(12)==="相手に追わせる") dist+=20;
+  if(pick(12)==="尽くす") dist-=20;
+  if(pick(12)==="自分から攻める") dist+=15;
+  // tension
+  if(pick(5)==="盛り上げる") ten+=25;
+  if(pick(7)==="ずっとテンション高く") ten+=25;
+  if(pick(11)==="変顔") ten+=15;
+  if(pick(11)==="真顔") ten-=20;
+  if(pick(0)==="相手を待つ") ten-=10;
+  if(pick(0)==="自分から話しかける") ten+=10;
+  if(pick(1)==="「元気すぎ」") ten+=20;
+  if(pick(1)==="「しっかりしてる」") ten-=5;
+  dist=Math.max(5,Math.min(95,dist));
+  ten=Math.max(5,Math.min(95,ten));
+  return {dist, ten};
+}
+
+function finish(){
+  state.result = score();
+  state.feel = "";
+  renderResult();
+  show("screen-result");
+  $("progress").style.width="100%";
+}
+
+function renderResult(){
+  const r = state.result;
+  $("r-badge").textContent = `${state.store} / ${state.name}`;
+  $("r-title").textContent = r.title;
+  $("r-desc").textContent = r.desc;
+  $("r-tags").innerHTML = r.tags.map(t=>`<span class="tag">${t}</span>`).join("");
+  $("r-mix").innerHTML = TYPES.map(t=>{
+    const p=r.pct[t];
+    return `<div class="mix-row"><span>${t}</span><div class="mix-bar"><div class="mix-fill" style="width:${p}%"></div></div><span>${p}%</span></div>`;
+  }).join("");
+  $("r-axes").innerHTML = `
+    <div class="axis"><div class="n">距離感</div><div class="track"><div class="dot" style="left:${r.axes.dist}%"></div></div><div class="ends"><span>甘える</span><span>引っ張る</span></div></div>
+    <div class="axis"><div class="n">テンション</div><div class="track"><div class="dot" style="left:${r.axes.ten}%"></div></div><div class="ends"><span>低め</span><span>高め</span></div></div>`;
+  $("r-intro").textContent = r.intro;
+  $("r-catch").textContent = r.catch;
+  $("r-pose").textContent = r.pose;
+  $("r-sns").textContent = r.sns;
+  $("r-tomorrow").textContent = r.tomorrow;
+  $("r-profile").textContent = r.profile;
+  $("feel-ok").className = "btn btn-ghost"+(state.feel==="しっくりくる"?" on-ok":"");
+  $("feel-adj").className = "btn btn-ghost"+(state.feel==="調整したい"?" on-adj":"");
+}
+
+$("feel-ok").onclick = ()=>{ state.feel="しっくりくる"; renderResult(); toast("了解！このまま送れるよ"); };
+$("feel-adj").onclick = ()=>{ state.feel="調整したい"; renderResult(); toast("調整希望をメモしたよ"); };
+
+function letter(oi){ return 'ABCD'[oi]; }
+
+function buildPayload(){
+  const r = state.result;
+  const qLine = 'Q:' + state.answers.map((oi,i)=>`${i+1}${letter(oi)}`).join('');
+  const feel = state.feel || '未選択';
+  const lines = [
+    '【キャラシート】',
+    `${state.name} / ${state.store}`,
+    qLine,
+    `メイン:${r.main} ギャップ:${r.gap}`,
+    feel,
+    r.title
+  ];
+  return {text: lines.join('\n'), ans: state.answers, r};
+}
+
+$("btn-copy").onclick = async ()=>{
+  if(!state.feel){ toast('先に「しっくりくる／調整したい」を選んでね'); return; }
+  const {text} = buildPayload();
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('コピーしたよ');
+    $("submit-status").textContent = 'コピー済み。店長に貼って、連絡事項グループへ送ってもらってね。';
+  }catch(e){
+    prompt('長押しでコピーしてね', text);
+  }
+};
+
+$("btn-line").onclick = ()=>{
+  if(!state.feel){ toast('先に「しっくりくる／調整したい」を選んでね'); return; }
+  const {text} = buildPayload();
+  const url = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+  $("submit-status").textContent = 'LINE共有を開いたよ。店長に送ってね。';
+  window.location.href = url;
+};
+</script>
+</body>
+</html>

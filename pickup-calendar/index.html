@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PICK-UPカレンダー">
+<meta name="theme-color" content="#1a0a10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ff5a96'/%3E%3C/svg%3E">
+<title>本日のPICK-UP カレンダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #14080c;
+  --bg2: #221017;
+  --card: #2a141c;
+  --ink: #fdeef3;
+  --muted: #c9a3b0;
+  --accent: #ff5a96;
+  --accent-dim: #c4185a;
+  --gold: #e0b85a;
+  --line: rgba(255, 200, 220, 0.16);
+  --ok: #3ecf8e;
+  --warn: #f0c36a;
+  --danger: #ff6b7a;
+  --radius: 16px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 16px; line-height: 1.55;
+}
+body { padding-top: var(--safe-t); padding-bottom: calc(var(--safe-b) + 8px); }
+button, input, select, textarea { font: inherit; color: inherit; }
+img { max-width: 100%; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 12px 14px 40px; }
+.hero-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 2px 14px; }
+.hero-bar h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; font-weight: 700; }
+.hero-bar .sub { color: var(--muted); font-size: 0.78rem; }
+.banner-line {
+  display: none; background: #3a2410; border: 1px solid rgba(240, 195, 106, 0.45);
+  color: #ffe9b8; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.9rem;
+}
+.banner-line.show { display: block; }
+.banner-line strong { color: #fff; }
+.banner-line .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.banner-line button {
+  background: var(--gold); color: #2a1a00; border: 0; border-radius: 999px;
+  padding: 8px 14px; font-weight: 700; cursor: pointer;
+}
+.card {
+  background: linear-gradient(180deg, #2e161e, #241219);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 14px 18px; margin-bottom: 14px;
+}
+.card h2 { margin: 0 0 12px; font-size: 0.95rem; letter-spacing: 0.06em; color: var(--gold); font-weight: 700; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.4em; height: 1.4em; margin-right: 6px;
+  border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 0.78rem; font-weight: 700;
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .grid-2.collapse { grid-template-columns: 1fr; } }
+label.fld { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+label.fld > span { font-weight: 500; }
+input[type="text"], input[type="number"], input[type="color"], select, textarea {
+  width: 100%; background: #1a0c11; border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; color: var(--ink);
+}
+input[type="color"] { height: 42px; padding: 4px; }
+.themes { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-btn {
+  flex: 1 1 30%; min-width: 110px;
+  background: #1a0c11; border: 2px solid var(--line); border-radius: 12px;
+  padding: 10px 8px; cursor: pointer; text-align: center; font-size: 0.85rem;
+}
+.theme-btn.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 90, 150, 0.25); }
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 4px; }
+.custom-row { display: none; margin-top: 12px; }
+.custom-row.show { display: block; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 999px; padding: 12px 16px; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-gold { background: var(--gold); color: #2a1a00; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-dark { background: #1a0c11; color: var(--ink); border: 1px solid var(--line); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.btn-row .btn { flex: 1 1 auto; }
+.hint { font-size: 0.78rem; color: var(--muted); margin: 6px 0 0; }
+.warn { color: var(--warn); }
+.ok { color: var(--ok); }
+.preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.stage {
+  width: min(100%, 340px); aspect-ratio: 9 / 16; background: #000;
+  border-radius: 14px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.45); position: relative;
+}
+.stage canvas { width: 100%; height: 100%; display: block; }
+#work { position: absolute; left: -9999px; top: 0; width: 1080px; height: 1920px; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.toggle input { width: 18px; height: 18px; }
+.days { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.day-card { background: #1a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.day-card .d-label { font-size: 0.75rem; color: var(--gold); font-weight: 700; margin-bottom: 6px; }
+.day-card.today { border-color: var(--accent); }
+.thumb {
+  width: 100%; aspect-ratio: 1 / 1.05; border-radius: 8px; overflow: hidden;
+  background: #2a1520; position: relative; touch-action: none; cursor: grab;
+}
+.thumb canvas, .thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.thumb .ph {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 0.75rem; text-align: center; padding: 6px;
+}
+.day-card input[type="text"] { margin-top: 6px; padding: 7px 8px; font-size: 0.85rem; }
+.day-card .mini-row { display: flex; gap: 6px; margin-top: 6px; }
+.day-card .mini-row label, .day-card .mini-row button {
+  flex: 1; font-size: 0.72rem; padding: 6px 0; text-align: center;
+  border-radius: 8px; border: 1px solid var(--line); background: #241016; cursor: pointer;
+}
+.day-card input[type="file"] { display: none; }
+.status { min-height: 1.3em; font-size: 0.85rem; color: var(--muted); text-align: center; margin-top: 4px; }
+.progress { display: none; height: 6px; background: #1a0c11; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.progress.show { display: block; }
+.progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 10px 8px 20px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero-bar">
+    <div>
+      <h1>本日のPICK-UP カレンダー</h1>
+      <div class="sub">写真と名前を入れて、ストーリー用の動画を作ります</div>
+    </div>
+  </header>
+
+  <div id="lineBanner" class="banner-line">
+    <strong>LINEの中で開いています。</strong>
+    このままでは動画の保存ができないことがあります。右上の「…」から <b>Safari</b>（iPhone）または <b>Chrome</b>（Android）で開いてください。
+    <div class="row">
+      <button type="button" id="btnCopyUrl">リンクをコピー</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2><span class="step-num">1</span>店舗とデザイン</h2>
+    <label class="fld"><span>店舗名</span>
+      <input type="text" id="storeName" placeholder="例：Myu Myu 川崎" autocomplete="organization">
+    </label>
+    <p class="hint">テーマを選んでください。カスタムでは店の色とロゴを使えます。</p>
+    <div class="themes" id="themeBtns">
+      <button type="button" class="theme-btn on" data-theme="myumyu"><span class="swatch" style="background:#ff5a96;box-shadow:inset 8px 0 0 #1a0a10"></span>Myu Myu</button>
+      <button type="button" class="theme-btn" data-theme="blue"><span class="swatch" style="background:#1e82a5;box-shadow:inset 8px 0 0 #e8eef4"></span>ブルー</button>
+      <button type="button" class="theme-btn" data-theme="custom"><span class="swatch" style="background:linear-gradient(90deg,#ff5a96,#6a5acd)"></span>カスタム</button>
+    </div>
+    <div id="customRow" class="custom-row">
+      <div class="grid-2">
+        <label class="fld"><span>メインの色</span><input type="color" id="color1" value="#ff5a96"></label>
+        <label class="fld"><span>背景の色</span><input type="color" id="color2" value="#14080c"></label>
+      </div>
+      <label class="fld" style="margin-top:8px"><span>ロゴ（任意）</span>
+        <input type="file" id="logoFile" accept="image/*">
+      </label>
+      <div class="btn-row"><button type="button" class="btn btn-ghost" id="btnClearLogo">ロゴをはずす</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">2</span>今月と、本日のPICK-UP</h2>
+    <div class="grid-3">
+      <label class="fld"><span>年</span><input type="number" id="year" min="2020" max="2099" step="1"></label>
+      <label class="fld"><span>月</span><select id="month"></select></label>
+      <label class="fld"><span>今日</span><select id="today"></select></label>
+    </div>
+    <label class="fld" style="margin-top:10px"><span>本日のキャスト名</span>
+      <input type="text" id="winnerName" placeholder="例：さくら" autocomplete="off">
+    </label>
+    <div class="fld" style="margin-top:10px"><span>本日の写真</span>
+      <div class="btn-row">
+        <label class="btn btn-dark" for="winnerPhoto">本日の写真を選ぶ</label>
+        <input type="file" id="winnerPhoto" accept="image/*" class="hidden">
+      </div>
+    </div>
+    <p class="hint">顔が中央に来るように自動で切り抜きます。下のマスをドラッグすると位置を直せます。</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">3</span>これまでの写真</h2>
+    <p class="hint">複数の写真をまとめて選ぶと、1日から順番に入ります。名前は分かれば書いてください。</p>
+    <div class="btn-row">
+      <label class="btn btn-dark" for="bulkPhotos">写真をまとめて選ぶ</label>
+      <input type="file" id="bulkPhotos" accept="image/*" multiple class="hidden">
+    </div>
+    <div id="days" class="days" style="margin-top:12px"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">4</span>プレビューして保存</h2>
+    <div class="preview-wrap">
+      <div class="stage">
+        <canvas id="preview" width="540" height="960"></canvas>
+      </div>
+      <canvas id="work" width="1080" height="1920"></canvas>
+    </div>
+    <label class="toggle" style="margin-top:10px;justify-content:center">
+      <input type="checkbox" id="sfxOn"> 保存する動画に効果音を入れる（任意）
+    </label>
+    <div class="btn-row" style="margin-top:12px">
+      <button type="button" class="btn btn-ghost" id="btnPlay">プレビュー再生</button>
+      <button type="button" class="btn btn-accent" id="btnVideo">動画を保存</button>
+      <button type="button" class="btn btn-gold" id="btnPng">PNG保存</button>
+    </div>
+    <div class="progress" id="progress"><span></span></div>
+    <div class="status" id="status"></div>
+    <p class="hint" id="formatHint"></p>
+  </section>
+
+  <section class="card">
+    <h2>データのバックアップ</h2>
+    <p class="hint">写真と名前はこの端末に自動で残ります。機種変更の前にバックアップを保存してください。</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-dark" id="btnExport">バックアップを保存</button>
+      <label class="btn btn-dark" for="importFile">バックアップを読み込む</label>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" id="btnReset">この月のデータを消す</button>
+    </div>
+  </section>
+
+  <footer class="note">
+    動画は 1080×1920（ストーリーズサイズ）で書き出します。このページは店の端末の中だけで動き、写真を外部に送りません。
+  </footer>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  const W = 1080, H = 1920, FPS = 30, DURATION = 7.5;
+  const HOLD = 1.0, LAND = 2.0, BANNER_AT = 2.4;
+  const MONTHS_EN = ["","JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+  const MONTHS_JA = ["","1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+  const LS_KEY = "pickup-calendar-v1";
+  const IDB_NAME = "pickup-calendar";
+  const IDB_STORE = "photos";
+
+  const THEMES = {
+    myumyu: {
+      light: false,
+      bgTop: [18,8,14], bgBottom: [8,4,8],
+      glowA: [90,18,48], glowB: [160,40,90], glowC: [60,10,30],
+      accent: [255,92,150], accentDark: [196,28,90], accentLight: [255,186,210],
+      gold: [232,196,96], goldDark: [176,130,40],
+      header: [255,232,240,200], subheader: [255,230,240],
+      pill: [40,12,24,230], pillBorder: [255,120,170,160],
+      vertical: [255,200,220,200],
+      cellBorder: [255,230,238], labelBg: [255,244,248], labelFg: [160,30,80],
+      emptyTop: [90,24,54], emptyBottom: [36,8,22], emptyText: [255,240,246],
+      bannerBg: [16,4,10,248], bannerTitle: [255,228,200], bannerName: [255,250,252],
+      sparkle: [255,236,244]
+    },
+    blue: {
+      light: true,
+      bgTop: [232,238,244], bgBottom: [214,226,236],
+      glowA: [200,220,235], glowB: [180,210,230], glowC: [240,246,252],
+      accent: [30,130,165], accentDark: [18,80,120], accentLight: [120,200,220],
+      gold: [220,188,90], goldDark: [160,120,40],
+      header: [255,255,255,210], subheader: [20,110,145],
+      pill: [236,248,250,230], pillBorder: [160,210,220,160],
+      vertical: [255,255,255,210],
+      cellBorder: [255,255,255], labelBg: [255,255,255], labelFg: [20,110,145],
+      emptyTop: [110,196,214], emptyBottom: [22,90,160], emptyText: [255,255,255],
+      bannerBg: [12,24,44,250], bannerTitle: [255,255,255], bannerName: [255,255,255],
+      sparkle: [255,255,255]
+    }
+  };
+
+  const FONTS = {
+    sans: '"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","YuGothic",sans-serif',
+    serif: '"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","YuMincho","HiraMinProN-W6",serif',
+    display: 'Cinzel,"Noto Serif JP","Times New Roman",serif',
+    italic: '"Playfair Display","Cormorant Garamond","Noto Serif JP",serif'
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+  const css = (rgb, a) => a == null ? ("rgb("+rgb[0]+","+rgb[1]+","+rgb[2]+")") : ("rgba("+rgb[0]+","+rgb[1]+","+rgb[2]+","+a+")");
+  function easeInOutCubic(t) {
+    t = clamp(t, 0, 1);
+    return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  }
+  function easeOutBack(t, s) {
+    t = clamp(t, 0, 1); s = s == null ? 1.15 : s;
+    return 1 + (s+1)*Math.pow(t-1,3) + s*Math.pow(t-1,2);
+  }
+  function hexToRgb(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return [255,90,150];
+    const n = parseInt(m[1], 16);
+    return [(n>>16)&255, (n>>8)&255, n&255];
+  }
+  function luma(c) { return 0.299*c[0]+0.587*c[1]+0.114*c[2]; }
+  function mix(a,b,t){ return [lerp(a[0],b[0],t)|0, lerp(a[1],b[1],t)|0, lerp(a[2],b[2],t)|0]; }
+  function seedRng(seed) {
+    let s = seed >>> 0 || 1;
+    return function () {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function computeLayout(nDays) {
+    const cols = 5, rows = Math.ceil(nDays / cols);
+    const headerY = (H * 0.052) | 0;
+    const subheaderY = (H * 0.118) | 0;
+    const subheaderH = (H * 0.032) | 0;
+    const rightMargin = (W * 0.12) | 0;
+    const leftMargin = (W * 0.048) | 0;
+    const gridTop = (H * 0.166) | 0;
+    const gridBottom = (H * 0.828) | 0;
+    const availW = W - leftMargin - rightMargin;
+    const availH = gridBottom - gridTop;
+    const gapX = Math.max(8, (W * 0.01) | 0);
+    const gapY = Math.max(8, (H * 0.005) | 0);
+    let labelH = Math.max(36, (H * 0.022) | 0);
+    const labelGap = Math.max(3, (H * 0.002) | 0);
+    const cellW = Math.floor((availW - gapX * (cols - 1)) / cols);
+    const cellH = Math.floor((availH - gapY * (rows - 1)) / rows);
+    let photoH = cellH - labelH - labelGap;
+    if (photoH < cellW * 0.9) {
+      labelH = Math.max(32, cellH - ((cellW * 0.95) | 0) - labelGap);
+      photoH = cellH - labelH - labelGap;
+    }
+    const gridW = cols * cellW + (cols - 1) * gapX;
+    const gridH = rows * cellH + (rows - 1) * gapY;
+    const radius = Math.max(6, (cellW * 0.06) | 0);
+    const border = Math.max(2, (W * 0.003) | 0);
+    function cellXY(day) {
+      const i = day - 1, r = Math.floor(i / cols), c = i % cols;
+      return [leftMargin + c * (cellW + gapX), gridTop + r * (cellH + gapY)];
+    }
+    function photoBox(day) {
+      const p = cellXY(day);
+      return [p[0], p[1], p[0]+cellW, p[1]+photoH];
+    }
+    function labelBox(day) {
+      const p = cellXY(day);
+      const ly = p[1] + photoH + labelGap;
+      return [p[0], ly, p[0]+cellW, ly+labelH];
+    }
+    const cx = leftMargin + gridW / 2;
+    const cy = (gridTop + gridH / 2) * 0.72 + (H * 0.5) * 0.28;
+    const scale = 3.55;
+    const pw = cellW * scale, ph = photoH * scale;
+    const heroStart = [cx - pw/2, cy - ph/2, cx + pw/2, cy + ph/2];
+    return { nDays, cols, rows, headerY, subheaderY, subheaderH, leftMargin, rightMargin,
+      gridTop, gridX: leftMargin, gridY: gridTop, gridW, gridH, gapX, gapY,
+      cellW, cellH, photoH, labelH, labelGap, radius, border, cellXY, photoBox, labelBox, heroStart };
+  }
+
+  function deriveCustom(c1, c2) {
+    const accent = hexToRgb(c1), bg = hexToRgb(c2);
+    const light = luma(bg) > 150;
+    const ink = light ? mix(accent, [20,20,30], 0.35) : [255,240,246];
+    return {
+      light,
+      bgTop: mix(bg, [255,255,255], light ? 0.08 : 0.04),
+      bgBottom: mix(bg, [0,0,0], light ? 0.08 : 0.25),
+      glowA: mix(accent, bg, 0.55),
+      glowB: accent,
+      glowC: mix(bg, accent, 0.3),
+      accent, accentDark: mix(accent, [0,0,0], 0.35), accentLight: mix(accent, [255,255,255], 0.4),
+      gold: [232,196,96], goldDark: [176,130,40],
+      header: light ? [255,255,255,210] : [255,232,240,210],
+      subheader: light ? ink : [255,230,240],
+      pill: light ? [255,255,255,220] : [20,8,12,230],
+      pillBorder: [accent[0], accent[1], accent[2], 160],
+      vertical: light ? [255,255,255,210] : [255,200,220,200],
+      cellBorder: light ? [255,255,255] : mix(accent, [255,255,255], 0.8),
+      labelBg: [255,248,250], labelFg: light ? ink : mix(accent, [80,0,30], 0.4),
+      emptyTop: mix(accent, bg, 0.25), emptyBottom: mix(accent, [0,0,0], 0.55),
+      emptyText: [255,245,250],
+      bannerBg: [Math.max(0,bg[0]*0.3)|0, Math.max(0,bg[1]*0.2)|0, Math.max(0,bg[2]*0.2)|0, 250],
+      bannerTitle: [255,228,200], bannerName: [255,255,255],
+      sparkle: mix(accent, [255,255,255], 0.7)
+    };
+  }
+
+  const now = new Date();
+  const state = {
+    storeName: "",
+    theme: "myumyu",
+    color1: "#ff5a96",
+    color2: "#14080c",
+    logoData: null,
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    today: now.getDate(),
+    winnerName: "",
+    days: {}
+  };
+  let layout = computeLayout(daysInMonth(state.year, state.month));
+  let theme = THEMES.myumyu;
+  const images = {};
+  let logoImg = null;
+  let staticLayer = null;
+  let sparkles = [];
+  let starSprites = [];
+  let playing = false, playTimer = 0, playStart = 0;
+  let saving = false;
+
+  const work = $("work");
+  const wctx = work.getContext("2d", { alpha: false });
+  const preview = $("preview");
+  const pctx = preview.getContext("2d", { alpha: false });
+
+  let idb;
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+      req.onsuccess = () => { idb = req.result; resolve(idb); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function monthKey() { return state.year + "-" + String(state.month).padStart(2,"0"); }
+  function idbGet(key) {
+    return new Promise((resolve, reject) => {
+      if (!idb) return resolve(null);
+      const r = idb.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
+      r.onsuccess = () => resolve(r.result || null);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  function idbSet(key, val) {
+    return new Promise((resolve, reject) => {
+      if (!idb) return resolve();
+      const r = idb.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(val, key);
+      r.onsuccess = () => resolve();
+      r.onerror = () => reject(r.error);
+    });
+  }
+  function metaPayload() {
+    const days = {};
+    for (const k of Object.keys(state.days)) {
+      const v = state.days[k];
+      days[k] = { name: v.name || "", ox: v.ox ?? 0.5, oy: v.oy ?? 0.5, hasPhoto: !!v.dataUrl };
+    }
+    return {
+      storeName: state.storeName, theme: state.theme, color1: state.color1, color2: state.color2,
+      year: state.year, month: state.month, today: state.today, winnerName: state.winnerName,
+      days, hasLogo: !!state.logoData
+    };
+  }
+  let saveTimer = 0;
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveAll, 400);
+  }
+  async function saveAll() {
+    try {
+      const all = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      all.settings = { theme: state.theme, color1: state.color1, color2: state.color2, storeName: state.storeName };
+      all.current = monthKey();
+      all.months = all.months || {};
+      all.months[monthKey()] = metaPayload();
+      localStorage.setItem(LS_KEY, JSON.stringify(all));
+    } catch (e) { console.warn("localStorage", e); }
+    const pack = { logo: state.logoData, days: {} };
+    for (const k of Object.keys(state.days)) {
+      const v = state.days[k];
+      if (v && v.dataUrl) pack.days[k] = v.dataUrl;
+    }
+    try { await idbSet(monthKey(), pack); } catch (e) { console.warn("idb", e); }
+  }
+  function applyMeta(meta) {
+    if (!meta) return;
+    state.storeName = meta.storeName || state.storeName;
+    state.theme = meta.theme || state.theme;
+    state.color1 = meta.color1 || state.color1;
+    state.color2 = meta.color2 || state.color2;
+    if (meta.year) state.year = meta.year;
+    if (meta.month) state.month = meta.month;
+    if (meta.today) state.today = meta.today;
+    state.winnerName = meta.winnerName || "";
+    state.days = state.days || {};
+    if (meta.days) {
+      for (const k of Object.keys(meta.days)) {
+        const v = meta.days[k];
+        const d = Number(k);
+        state.days[d] = Object.assign({ name: "", ox: 0.5, oy: 0.5, dataUrl: null }, state.days[d], {
+          name: v.name || "", ox: v.ox ?? 0.5, oy: v.oy ?? 0.5
+        });
+      }
+    }
+  }
+  async function loadAll() {
+    let all = {};
+    try { all = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch (e) {}
+    if (all.settings) {
+      state.storeName = all.settings.storeName || state.storeName;
+      state.theme = all.settings.theme || state.theme;
+      state.color1 = all.settings.color1 || state.color1;
+      state.color2 = all.settings.color2 || state.color2;
+    }
+    if (all.current) {
+      const parts = all.current.split("-").map(Number);
+      if (parts[0] && parts[1]) { state.year = parts[0]; state.month = parts[1]; }
+    }
+    const meta = (all.months && all.months[monthKey()]) || null;
+    if (meta) applyMeta(meta);
+    const pack = await idbGet(monthKey());
+    if (pack) {
+      if (pack.logo) { state.logoData = pack.logo; await setLogo(pack.logo); }
+      if (pack.days) {
+        for (const k of Object.keys(pack.days)) {
+          const d = Number(k);
+          const url = pack.days[k];
+          state.days[d] = state.days[d] || { name: "", ox: 0.5, oy: 0.5 };
+          state.days[d].dataUrl = url;
+          await setDayImage(d, url);
+        }
+      }
+    }
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = src;
+    });
+  }
+  async function setDayImage(day, dataUrl) {
+    images[day] = await loadImage(dataUrl);
+  }
+  async function setLogo(dataUrl) {
+    logoImg = dataUrl ? await loadImage(dataUrl) : null;
+  }
+  function readFile(file, maxEdge, quality) {
+    maxEdge = maxEdge || 900;
+    quality = quality || 0.84;
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = () => {
+        const im = new Image();
+        im.onload = () => {
+          const scale = Math.min(1, maxEdge / Math.max(im.width, im.height));
+          const w = Math.max(2, Math.round(im.width * scale));
+          const h = Math.max(2, Math.round(im.height * scale));
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(im, 0, 0, w, h);
+          resolve(c.toDataURL("image/jpeg", quality));
+        };
+        im.onerror = reject;
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+  function fillRound(ctx, x, y, w, h, r, fill) {
+    ctx.fillStyle = fill;
+    roundedRect(ctx, x, y, w, h, r);
+    ctx.fill();
+  }
+  function trackText(ctx, text, x, y, tracking, align) {
+    align = align || "left";
+    const widths = [];
+    let total = 0;
+    for (const ch of text) {
+      const w = ctx.measureText(ch).width;
+      widths.push(w); total += w;
+    }
+    if (text.length > 1) total += tracking * (text.length - 1);
+    let cx = x;
+    if (align === "center") cx = x - total / 2;
+    if (align === "right") cx = x - total;
+    for (let i = 0; i < text.length; i++) {
+      ctx.fillText(text[i], cx, y);
+      cx += widths[i] + tracking;
+    }
+    return total;
+  }
+  function drawCover(ctx, img, x, y, w, h, ox, oy) {
+    if (!img) return;
+    ox = ox == null ? 0.5 : ox;
+    oy = oy == null ? 0.5 : oy;
+    const scale = Math.max(w / img.width, h / img.height);
+    const dw = img.width * scale, dh = img.height * scale;
+    let dx = x + w/2 - ox * dw;
+    let dy = y + h/2 - oy * dh;
+    dx = clamp(dx, x + w - dw, x);
+    dy = clamp(dy, y + h - dh, y);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+  function drawCoverClipped(ctx, img, x, y, w, h, r, ox, oy, border, borderColor) {
+    ctx.save();
+    if (border) {
+      fillRound(ctx, x, y, w, h, r, borderColor || "#fff");
+      const b = border;
+      roundedRect(ctx, x+b, y+b, w-2*b, h-2*b, Math.max(1, r-b));
+      ctx.clip();
+      drawCover(ctx, img, x+b, y+b, w-2*b, h-2*b, ox, oy);
+    } else {
+      roundedRect(ctx, x, y, w, h, r);
+      ctx.clip();
+      drawCover(ctx, img, x, y, w, h, ox, oy);
+    }
+    ctx.restore();
+  }
+  function verticalGradient(ctx, x, y, w, h, c1, c2) {
+    const g = ctx.createLinearGradient(0, y, 0, y+h);
+    g.addColorStop(0, css(c1));
+    g.addColorStop(1, css(c2));
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+  }
+  function radial(ctx, cx, cy, r, color, a) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, css(color, a));
+    g.addColorStop(1, css(color, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(cx-r, cy-r, r*2, r*2);
+  }
+  function drawCrown(ctx, cx, cy, w, h, gold, stroke) {
+    ctx.save();
+    ctx.fillStyle = css(gold);
+    ctx.strokeStyle = css(stroke);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - w*0.50, cy + h*0.48);
+    ctx.lineTo(cx - w*0.50, cy + h*0.28);
+    ctx.lineTo(cx - w*0.48, cy - h*0.05);
+    ctx.lineTo(cx - w*0.25, cy + h*0.18);
+    ctx.lineTo(cx, cy - h*0.50);
+    ctx.lineTo(cx + w*0.25, cy + h*0.18);
+    ctx.lineTo(cx + w*0.48, cy - h*0.05);
+    ctx.lineTo(cx + w*0.50, cy + h*0.28);
+    ctx.lineTo(cx + w*0.50, cy + h*0.48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff6d0";
+    ctx.beginPath();
+    ctx.arc(cx, cy - h*0.50, Math.max(2, h*0.12), 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = css(mix(gold, [255,255,220], 0.35));
+    ctx.fillRect(cx - w*0.48, cy + h*0.22, w*0.96, h*0.14);
+    ctx.restore();
+  }
+
+  function makeStarSprite(size) {
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const ctx = c.getContext("2d");
+    const cx = size/2, cy = size/2;
+    const img = ctx.createImageData(size, size);
+    const data = img.data;
+    const beam = size * 0.065, diagW = size * 0.04;
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+        const ax = Math.abs(dx), ay = Math.abs(dy);
+        const vert = Math.max(0, 1 - ax/Math.max(beam,0.5)) * Math.max(0, 1 - ay/(size*0.5));
+        const horz = Math.max(0, 1 - ay/Math.max(beam,0.5)) * Math.max(0, 1 - ax/(size*0.5));
+        const rx = (dx+dy)/Math.SQRT2, ry = (dx-dy)/Math.SQRT2;
+        const d1 = Math.max(0, 1 - Math.abs(rx)/Math.max(diagW,0.4)) * Math.max(0, 1 - Math.abs(ry)/(size*0.32));
+        const d2 = Math.max(0, 1 - Math.abs(ry)/Math.max(diagW,0.4)) * Math.max(0, 1 - Math.abs(rx)/(size*0.32));
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        const core = Math.pow(Math.max(0, 1 - dist/(size*0.2)), 0.55);
+        const glow = Math.pow(Math.max(0, 1 - dist/(size*0.48)), 2.2) * 0.55;
+        let v = vert + horz + 0.55*(d1+d2) + 1.35*core + glow;
+        v = Math.min(1, Math.pow(v, 0.82));
+        const i = (y*size + x) * 4;
+        data[i] = data[i+1] = data[i+2] = 255;
+        data[i+3] = (v * 255) | 0;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+  function initSparkles() {
+    const sizes = [22, 32, 44, 64, 88, 120];
+    starSprites = sizes.map(makeStarSprite);
+    const rand = seedRng(42);
+    sparkles = [];
+    for (let i = 0; i < 80; i++) {
+      const pick = rand();
+      let si = 0;
+      if (pick > 0.55) si = 1;
+      if (pick > 0.75) si = 2;
+      if (pick > 0.88) si = 3;
+      if (pick > 0.95) si = 4;
+      if (pick > 0.985) si = 5;
+      sparkles.push({
+        x: 20 + rand()*(W-40),
+        y: 40 + rand()*(H-80),
+        si,
+        phase: rand() * Math.PI * 2,
+        speed: 1.1 + rand()*2.4,
+        driftX: (rand()-0.5)*18,
+        driftY: (rand()-0.5)*14,
+        baseA: 0.35 + rand()*0.65
+      });
+    }
+  }
+  function drawSparkles(ctx, t) {
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    for (let i = 0; i < sparkles.length; i++) {
+      const sp = sparkles[i];
+      const tw = Math.pow(0.5 + 0.5 * Math.sin(sp.phase + t * sp.speed), 1.55);
+      const a = sp.baseA * tw;
+      if (a < 0.05) continue;
+      const x = sp.x + Math.sin(sp.phase*0.5 + t*0.4) * sp.driftX;
+      const y = sp.y + Math.cos(sp.phase*0.4 + t*0.35) * sp.driftY;
+      const spr = starSprites[sp.si];
+      ctx.globalAlpha = a;
+      ctx.drawImage(spr, x - spr.width/2, y - spr.height/2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function currentTheme() {
+    if (state.theme === "custom") return deriveCustom(state.color1, state.color2);
+    return THEMES[state.theme] || THEMES.myumyu;
+  }
+
+  function buildStatic() {
+    theme = currentTheme();
+    const n = daysInMonth(state.year, state.month);
+    layout = computeLayout(n);
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d");
+    verticalGradient(ctx, 0, 0, W, H, theme.bgTop, theme.bgBottom);
+    radial(ctx, W*0.5, H*0.12, W*0.85, theme.glowB, theme.light ? 0.28 : 0.40);
+    radial(ctx, W*0.08, H*0.55, W*0.7, theme.glowA, theme.light ? 0.22 : 0.35);
+    radial(ctx, W*0.9, H*0.8, W*0.6, theme.glowC, theme.light ? 0.2 : 0.3);
+    ctx.save();
+    ctx.strokeStyle = css(theme.gold, theme.light ? 0.22 : 0.28);
+    ctx.lineWidth = 2;
+    const corners = [[24,24,1,1],[W-24,24,-1,1],[24,H-24,1,-1],[W-24,H-24,-1,-1]];
+    for (let i = 0; i < corners.length; i++) {
+      const x = corners[i][0], y = corners[i][1], sx = corners[i][2], sy = corners[i][3];
+      const rads = [40,70,100];
+      for (let j = 0; j < rads.length; j++) {
+        const rad = rads[j];
+        ctx.beginPath();
+        let start = 0, end = 0;
+        if (sx>0 && sy>0) { start=Math.PI; end=Math.PI*1.5; }
+        else if (sx<0 && sy>0) { start=Math.PI*1.5; end=Math.PI*2; }
+        else if (sx>0 && sy<0) { start=Math.PI*0.5; end=Math.PI; }
+        else { start=0; end=Math.PI*0.5; }
+        ctx.arc(x, y, rad, start, end);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    const vig = ctx.createRadialGradient(W/2, H*0.48, W*0.25, W/2, H*0.48, W*0.85);
+    if (theme.light) {
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(40,50,70,0.18)");
+    } else {
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(0,0,0,0.55)");
+    }
+    ctx.fillStyle = vig;
+    ctx.fillRect(0,0,W,H);
+
+    const L = layout;
+    for (let day = 1; day <= n; day++) {
+      const box = L.photoBox(day);
+      const x0 = box[0], y0 = box[1], pw = box[2]-box[0], ph = box[3]-box[1];
+      const rec = state.days[day];
+      const img = images[day];
+      ctx.save();
+      ctx.shadowColor = theme.light ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.45)";
+      ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      fillRound(ctx, x0, y0, pw, ph, L.radius, css(theme.cellBorder));
+      ctx.restore();
+      if (img) {
+        drawCoverClipped(ctx, img, x0, y0, pw, ph, L.radius, rec && rec.ox, rec && rec.oy, L.border, css(theme.cellBorder));
+      } else {
+        ctx.save();
+        roundedRect(ctx, x0, y0, pw, ph, L.radius);
+        ctx.clip();
+        verticalGradient(ctx, x0, y0, pw, ph, theme.emptyTop, theme.emptyBottom);
+        ctx.restore();
+        ctx.save();
+        roundedRect(ctx, x0, y0, pw, ph, L.radius);
+        ctx.strokeStyle = css(theme.cellBorder);
+        ctx.lineWidth = L.border;
+        ctx.stroke();
+        ctx.fillStyle = css(theme.emptyText);
+        ctx.font = "italic 500 " + Math.max(22, (L.cellW*0.22)|0) + "px " + FONTS.italic;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("who's", x0+pw/2, y0+ph*0.42);
+        ctx.fillText("next", x0+pw/2, y0+ph*0.62);
+        ctx.restore();
+      }
+      const lb = L.labelBox(day);
+      const lw = lb[2]-lb[0], lh = lb[3]-lb[1];
+      fillRound(ctx, lb[0], lb[1], lw, lh, Math.min(10, lh/2), css(theme.labelBg, 0.96));
+      ctx.fillStyle = css(theme.labelFg);
+      ctx.font = "600 " + Math.max(22, (L.labelH*0.70)|0) + "px " + FONTS.serif;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("day"+day, (lb[0]+lb[2])/2, (lb[1]+lb[3])/2);
+    }
+
+    const header = MONTHS_EN[state.month] + " " + state.year;
+    ctx.save();
+    ctx.font = "600 " + Math.max(64, (W*0.092)|0) + "px " + FONTS.display;
+    ctx.fillStyle = css(theme.header.slice(0,3), (theme.header[3]||200)/255);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.shadowColor = css(theme.header.slice(0,3), 0.25);
+    ctx.shadowBlur = 8;
+    trackText(ctx, header, W*0.52, L.headerY, W*0.006, "center");
+    ctx.restore();
+
+    if (state.storeName) {
+      ctx.save();
+      ctx.font = "500 " + Math.max(18, (W*0.022)|0) + "px " + FONTS.sans;
+      ctx.fillStyle = css(theme.subheader, 0.9);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(state.storeName, W*0.5, L.headerY - 4);
+      ctx.restore();
+    }
+    if (logoImg) {
+      const maxW = 160, maxH = 70;
+      const sc = Math.min(maxW/logoImg.width, maxH/logoImg.height);
+      const lw = logoImg.width*sc, lh = logoImg.height*sc;
+      ctx.drawImage(logoImg, 36, 28, lw, lh);
+    }
+
+    const sub = "#本日のPICK-UP | 当日の集客や売上など総合で最も頑張ったキャスト";
+    ctx.font = "700 " + Math.max(18, (W*0.022)|0) + "px " + FONTS.sans;
+    const tw = ctx.measureText(sub).width;
+    const pillW = Math.min(W - L.leftMargin - (W*0.08), Math.max(L.gridW, tw + W*0.05));
+    const pillH = Math.max(L.subheaderH, 40);
+    const px = L.gridX, py = L.subheaderY;
+    ctx.save();
+    ctx.shadowColor = css(theme.accent, 0.35);
+    ctx.shadowBlur = 16;
+    fillRound(ctx, px, py, pillW, pillH, pillH/2, css(theme.pill.slice(0,3), (theme.pill[3]||220)/255));
+    ctx.restore();
+    ctx.strokeStyle = css(theme.pillBorder.slice(0,3), (theme.pillBorder[3]||160)/255);
+    ctx.lineWidth = 1;
+    roundedRect(ctx, px, py, pillW, pillH, pillH/2);
+    ctx.stroke();
+    ctx.fillStyle = css(theme.subheader);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(sub, px + pillW/2, py + pillH/2);
+
+    const vert = "#本日のPICK-UP CALENDAR";
+    ctx.save();
+    ctx.font = "400 " + Math.max(24, (W*0.028)|0) + "px " + FONTS.sans;
+    ctx.fillStyle = css(theme.vertical.slice(0,3), (theme.vertical[3]||200)/255);
+    ctx.translate(L.gridX + L.gridW + W*0.042, L.gridY + L.gridH/2);
+    ctx.rotate(Math.PI/2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    trackText(ctx, vert, 0, 0, 3, "center");
+    ctx.restore();
+
+    staticLayer = c;
+  }
+
+  function lerpBox(a, b, t) {
+    return [lerp(a[0],b[0],t), lerp(a[1],b[1],t), lerp(a[2],b[2],t), lerp(a[3],b[3],t)];
+  }
+  function drawHero(ctx, box, img, ox, oy, shadowA) {
+    const L = layout;
+    const x = box[0], y = box[1], w = box[2]-box[0], h = box[3]-box[1];
+    const r = Math.max(6, L.radius * (w / L.cellW));
+    const b = Math.max(2, L.border * (w / L.cellW));
+    ctx.save();
+    if (shadowA > 0) {
+      ctx.shadowColor = "rgba(0,0,0," + shadowA + ")";
+      ctx.shadowBlur = 28 * (w / (L.cellW*3.55));
+      ctx.shadowOffsetY = 14 * (w / (L.cellW*3.55));
+    }
+    fillRound(ctx, x, y, w, h, r + 1, css(theme.cellBorder));
+    ctx.restore();
+    if (img) drawCoverClipped(ctx, img, x, y, w, h, r, ox, oy, b, css(theme.cellBorder));
+  }
+  function drawBanner(ctx, name, u, alpha) {
+    const L = layout;
+    const last = L.nDays;
+    const d0 = Math.max(1, last - 2);
+    const b0 = L.photoBox(d0), b1 = L.photoBox(last);
+    const pad = 4;
+    const x0 = b0[0]-pad, y0 = b0[1]-pad, x1 = b1[2]+pad, y1 = b1[3]+pad;
+    const bw = x1-x0, bh = y1-y0;
+    const scale = 0.86 + 0.14 * Math.min(1, u);
+    const nw = bw * scale, nh = bh * scale;
+    const x = x0 + (bw-nw)/2, y = y0 + (bh-nh)/2;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const bg = theme.bannerBg;
+    ctx.globalCompositeOperation = "source-over";
+    fillRound(ctx, x, y, nw, nh, Math.max(10, L.radius+2), css(bg.slice(0,3), 1));
+    ctx.strokeStyle = css(theme.gold, 0.45);
+    ctx.lineWidth = 1;
+    roundedRect(ctx, x+1, y+1, nw-2, nh-2, Math.max(10, L.radius+2));
+    ctx.stroke();
+
+    const kicker = "TODAY'S PICK UP";
+    ctx.fillStyle = css(theme.bannerTitle);
+    ctx.font = "600 " + Math.max(16, (L.cellW*0.12)|0) + "px " + FONTS.display;
+    ctx.textBaseline = "top";
+    const ky = y + nh*0.12;
+    const tracking = Math.max(4, nw*0.016);
+    const kw = trackText(ctx, kicker, x+nw/2, ky, tracking, "center");
+    const lineY = ky + Math.max(22, (L.cellW*0.12)) + nh*0.04;
+    ctx.strokeStyle = css(theme.gold);
+    ctx.lineWidth = Math.max(1, nh*0.01);
+    ctx.beginPath();
+    ctx.moveTo(x+nw/2 - kw/2, lineY);
+    ctx.lineTo(x+nw/2 + kw/2, lineY);
+    ctx.stroke();
+    drawCrown(ctx, x+nw/2, lineY + nh*0.14, nw*0.14, nh*0.16, theme.gold, theme.goldDark);
+
+    const nm = name || " ";
+    ctx.fillStyle = css(theme.bannerName);
+    let size = Math.max(44, (L.photoH*0.36)|0);
+    ctx.font = "700 " + size + "px " + FONTS.serif;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    while (ctx.measureText(nm).width > nw*0.86 && size > 24) {
+      size -= 2;
+      ctx.font = "700 " + size + "px " + FONTS.serif;
+    }
+    ctx.fillText(nm, x+nw/2, y + nh*0.70);
+    ctx.restore();
+  }
+
+  function drawFrame(ctx, t) {
+    if (!staticLayer) buildStatic();
+    ctx.drawImage(staticLayer, 0, 0);
+    const today = state.today;
+    const rec = state.days[today] || {};
+    const img = images[today];
+    const end = layout.photoBox(today);
+    const start = layout.heroStart;
+    if (t < LAND - 1e-4) {
+      const u = t <= HOLD ? 0 : easeInOutCubic((t - HOLD) / (LAND - HOLD));
+      const box = lerpBox(start, end, u);
+      let fade = 1;
+      if (t >= LAND - 0.08) fade = (LAND - t) / 0.08;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      drawHero(ctx, box, img, rec.ox, rec.oy, 0.55 * fade);
+      ctx.restore();
+    }
+    if (t >= BANNER_AT) {
+      const u = easeOutBack(Math.min(1, (t - BANNER_AT) / 0.45));
+      const a = Math.min(1, (t - BANNER_AT) / 0.25);
+      drawBanner(ctx, state.winnerName, u, a);
+    }
+    drawSparkles(ctx, t);
+  }
+  function blitPreview() {
+    pctx.drawImage(work, 0, 0, preview.width, preview.height);
+  }
+  function redrawPoster() {
+    drawFrame(wctx, DURATION - 1/FPS);
+    blitPreview();
+  }
+
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(ctx, dest, t0, freq, amp, decay) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(amp, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+    osc.connect(g); g.connect(dest);
+    osc.start(t0); osc.stop(t0 + decay + 0.05);
+  }
+  function scheduleSfx(ctx, dest, when) {
+    const snap = when + LAND;
+    const chime = [[1046.5,0.18],[1568,0.13],[2093,0.09],[2637,0.05]];
+    for (let i = 0; i < chime.length; i++) playTone(ctx, dest, snap + i*0.012, chime[i][0], chime[i][1], 1.2);
+    const sh = when + BANNER_AT;
+    const spark = [1760,2093,2637,3520,4186];
+    for (let i = 0; i < spark.length; i++) playTone(ctx, dest, sh + i*0.035, spark[i], 0.04, 1.1);
+  }
+
+  function pickMime() {
+    const types = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4;codecs=avc1.42001E",
+      "video/mp4;codecs=avc1.42E01E",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8,opus",
+      "video/webm;codecs=vp8",
+      "video/webm"
+    ];
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    for (let i = 0; i < types.length; i++) {
+      try { if (MediaRecorder.isTypeSupported(types[i])) return types[i]; } catch (e) {}
+    }
+    return "";
+  }
+  function extFor(mime) {
+    return (mime || "").indexOf("mp4") >= 0 ? "mp4" : "webm";
+  }
+  function fileBase() {
+    const n = (state.winnerName || "pickup").replace(/[\\/:*?"<>|]/g, "");
+    return "pickup_" + state.year + "-" + String(state.month).padStart(2,"0") + "-" + String(state.today).padStart(2,"0") + "_" + n;
+  }
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    return url;
+  }
+  async function maybeShare(blob, filename, title) {
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: title }); return true; } catch (e) {
+        if (e && e.name === "AbortError") return true;
+      }
+    }
+    downloadBlob(blob, filename);
+    return false;
+  }
+
+  function setStatus(msg, cls) {
+    const el = $("status");
+    el.className = "status " + (cls || "");
+    el.textContent = msg || "";
+  }
+  function setProgress(p) {
+    const el = $("progress");
+    if (p == null) { el.classList.remove("show"); return; }
+    el.classList.add("show");
+    el.firstElementChild.style.width = Math.round(clamp(p,0,1)*100) + "%";
+  }
+
+  async function recordVideo() {
+    if (!window.MediaRecorder) {
+      throw new Error("このブラウザは動画の書き出しに対応していません。Safari または Chrome の最新版で開いてください。");
+    }
+    const mime = pickMime();
+    if (!mime) {
+      throw new Error("このブラウザでは動画形式が使えません。Safari で開き直してください。");
+    }
+    buildStatic();
+    const stream = work.captureStream(FPS);
+    const vtrack = stream.getVideoTracks()[0];
+    let recStream = stream;
+    let ctx = null;
+    const wantSfx = $("sfxOn").checked;
+    if (wantSfx) {
+      ctx = ensureAudio();
+      const dest = ctx.createMediaStreamDestination();
+      recStream = new MediaStream([vtrack].concat(dest.stream.getAudioTracks()));
+      scheduleSfx(ctx, dest, ctx.currentTime + 0.05);
+    }
+    const opts = { mimeType: mime, videoBitsPerSecond: 8000000 };
+    let rec;
+    try { rec = new MediaRecorder(recStream, opts); }
+    catch (e) { rec = new MediaRecorder(recStream); }
+    const chunks = [];
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(function (resolve, reject) {
+      rec.onstop = resolve;
+      rec.onerror = function (ev) { reject(ev.error || new Error("録画に失敗しました")); };
+    });
+    rec.start(100);
+    const t0 = performance.now();
+    await new Promise(function (resolve) {
+      const tick = function () {
+        const t = Math.min(DURATION, (performance.now() - t0) / 1000);
+        drawFrame(wctx, t);
+        blitPreview();
+        if (vtrack.requestFrame) try { vtrack.requestFrame(); } catch (e) {}
+        setProgress(t / DURATION);
+        if (t >= DURATION) resolve();
+        else requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    drawFrame(wctx, DURATION - 1 / FPS);
+    blitPreview();
+    if (vtrack.requestFrame) try { vtrack.requestFrame(); } catch (e) {}
+    if (rec.state === "recording") rec.stop();
+    await stopped;
+    stream.getTracks().forEach(function (t) { t.stop(); });
+    if (recStream !== stream) recStream.getTracks().forEach(function (t) { if (t.kind === "audio") t.stop(); });
+    const blob = new Blob(chunks, { type: rec.mimeType || mime });
+    if (!blob.size) throw new Error("動画データが空でした。別のブラウザで試してください。");
+    return { blob: blob, mime: rec.mimeType || mime };
+  }
+
+  function isLineBrowser() { return /Line\//i.test(navigator.userAgent); }
+  function isInAppBrowser() {
+    return isLineBrowser() || /FBAN|FBAV|Instagram|Twitter|MicroMessenger/i.test(navigator.userAgent);
+  }
+  function syncThemeButtons() {
+    document.querySelectorAll(".theme-btn").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.theme === state.theme);
+    });
+    $("customRow").classList.toggle("show", state.theme === "custom");
+  }
+  function fillMonthSelects() {
+    const ms = $("month");
+    if (!ms.options.length) {
+      for (let i = 1; i <= 12; i++) {
+        const o = document.createElement("option");
+        o.value = i; o.textContent = MONTHS_JA[i];
+        ms.appendChild(o);
+      }
+    }
+    $("year").value = state.year;
+    ms.value = state.month;
+    const n = daysInMonth(state.year, state.month);
+    const ts = $("today");
+    ts.innerHTML = "";
+    for (let i = 1; i <= n; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = i + "日";
+      ts.appendChild(o);
+    }
+    if (state.today > n) state.today = n;
+    ts.value = state.today;
+  }
+  function paintThumb(cv, day) {
+    const ctx = cv.getContext("2d");
+    const rec = state.days[day];
+    const img = images[day];
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = "#2a1520";
+    ctx.fillRect(0,0,cv.width,cv.height);
+    if (img) drawCover(ctx, img, 0, 0, cv.width, cv.height, rec && rec.ox, rec && rec.oy);
+  }
+  function renderDayCards() {
+    const n = daysInMonth(state.year, state.month);
+    const box = $("days");
+    box.innerHTML = "";
+    for (let d = 1; d <= n; d++) {
+      const rec = state.days[d] || { name: "", ox: 0.5, oy: 0.5 };
+      const el = document.createElement("div");
+      el.className = "day-card" + (d === state.today ? " today" : "");
+      const title = "day" + d + (d===state.today ? " ・本日" : "");
+      const ph = rec.dataUrl ? "ドラッグで位置調整" : "写真なし";
+      const nameVal = rec.name || (d === state.today ? state.winnerName : "");
+      el.innerHTML = '<div class="d-label"></div><div class="thumb"><canvas width="240" height="252"></canvas><div class="ph"></div></div><input type="text" placeholder="名前（任意）"><div class="mini-row"><label>写真を選ぶ<input type="file" accept="image/*"></label><button type="button">はずす</button></div>';
+      el.querySelector(".d-label").textContent = title;
+      el.querySelector(".thumb").dataset.day = String(d);
+      el.querySelector(".ph").textContent = ph;
+      const nameInp = el.querySelector('input[type="text"]');
+      nameInp.dataset.name = String(d);
+      nameInp.value = nameVal;
+      const fileInp = el.querySelector('input[type="file"]');
+      fileInp.dataset.photo = String(d);
+      el.querySelector("button").dataset.clear = String(d);
+      box.appendChild(el);
+      paintThumb(el.querySelector(".thumb canvas"), d);
+      if (rec.dataUrl) el.querySelector(".ph").style.display = "none";
+    }
+  }
+  function bindDayListEvents() {
+    const box = $("days");
+    box.addEventListener("change", async function (e) {
+      const t = e.target;
+      if (t.dataset.name) {
+        const d = Number(t.dataset.name);
+        state.days[d] = state.days[d] || { name:"", ox:0.5, oy:0.5 };
+        state.days[d].name = t.value;
+        if (d === state.today) { state.winnerName = t.value; $("winnerName").value = t.value; }
+        scheduleSave();
+      }
+      if (t.dataset.photo && t.files && t.files[0]) {
+        const d = Number(t.dataset.photo);
+        await assignPhoto(d, t.files[0]);
+        t.value = "";
+      }
+    });
+    box.addEventListener("click", function (e) {
+      const t = e.target.closest("[data-clear]");
+      if (!t) return;
+      const d = Number(t.dataset.clear);
+      if (state.days[d]) { state.days[d].dataUrl = null; }
+      delete images[d];
+      scheduleSave(); refreshAll();
+    });
+    let drag = null;
+    function start(e, thumb) {
+      const d = Number(thumb.dataset.day);
+      if (!images[d]) return;
+      const rec = state.days[d] || (state.days[d] = { name:"", ox:0.5, oy:0.5 });
+      const ev = e.touches ? e.touches[0] : e;
+      drag = { d: d, x: ev.clientX, y: ev.clientY, ox: rec.ox ?? 0.5, oy: rec.oy ?? 0.5, thumb: thumb };
+      e.preventDefault();
+    }
+    function move(e) {
+      if (!drag) return;
+      const ev = e.touches ? e.touches[0] : e;
+      const rec = state.days[drag.d];
+      const img = images[drag.d];
+      const r = drag.thumb.getBoundingClientRect();
+      const scale = Math.max(r.width / img.width, r.height / img.height);
+      rec.ox = clamp(drag.ox - (ev.clientX - drag.x) / (img.width * scale), 0.15, 0.85);
+      rec.oy = clamp(drag.oy - (ev.clientY - drag.y) / (img.height * scale), 0.15, 0.85);
+      paintThumb(drag.thumb.querySelector("canvas"), drag.d);
+      e.preventDefault();
+    }
+    function end() {
+      if (!drag) return;
+      drag = null;
+      scheduleSave();
+      buildStatic(); redrawPoster();
+    }
+    box.addEventListener("pointerdown", function (e) {
+      const thumb = e.target.closest(".thumb");
+      if (thumb) start(e, thumb);
+    });
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", end);
+    box.addEventListener("touchstart", function (e) {
+      const thumb = e.target.closest(".thumb");
+      if (thumb) start(e, thumb);
+    }, { passive: false });
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+  }
+
+  async function assignPhoto(day, file) {
+    const url = await readFile(file);
+    state.days[day] = Object.assign({ name:"", ox:0.5, oy:0.5 }, state.days[day], { dataUrl: url });
+    await setDayImage(day, url);
+    scheduleSave();
+    refreshAll();
+  }
+
+  function refreshAll() {
+    theme = currentTheme();
+    fillMonthSelects();
+    $("storeName").value = state.storeName;
+    $("winnerName").value = state.winnerName;
+    $("color1").value = state.color1;
+    $("color2").value = state.color2;
+    syncThemeButtons();
+    renderDayCards();
+    buildStatic();
+    redrawPoster();
+  }
+
+  async function changeMonthIfNeeded() {
+    const y = Number($("year").value), m = Number($("month").value);
+    if (y === state.year && m === state.month) {
+      state.today = Number($("today").value);
+      refreshAll(); scheduleSave();
+      return;
+    }
+    await saveAll();
+    state.year = y; state.month = m;
+    state.today = Math.min(Number($("today").value) || 1, daysInMonth(y, m));
+    state.days = {};
+    Object.keys(images).forEach(function (k) { delete images[k]; });
+    const all = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    if (all.months && all.months[monthKey()]) applyMeta(all.months[monthKey()]);
+    const pack = await idbGet(monthKey());
+    if (pack && pack.days) {
+      for (const k of Object.keys(pack.days)) {
+        const d = Number(k);
+        state.days[d] = Object.assign({ name:"", ox:0.5, oy:0.5 }, state.days[d], { dataUrl: pack.days[k] });
+        await setDayImage(d, pack.days[k]);
+      }
+    }
+    refreshAll();
+    scheduleSave();
+  }
+
+  function stopPreview() {
+    playing = false;
+    cancelAnimationFrame(playTimer);
+    $("btnPlay").textContent = "プレビュー再生";
+    redrawPoster();
+  }
+  function playPreview() {
+    if (playing) { stopPreview(); return; }
+    buildStatic();
+    playing = true;
+    $("btnPlay").textContent = "停止";
+    playStart = performance.now();
+    if ($("sfxOn").checked) {
+      const ctx = ensureAudio();
+      scheduleSfx(ctx, ctx.destination, ctx.currentTime);
+    }
+    const tick = function (now) {
+      if (!playing) return;
+      const t = ((now - playStart) / 1000);
+      if (t >= DURATION) { stopPreview(); return; }
+      drawFrame(wctx, t);
+      blitPreview();
+      playTimer = requestAnimationFrame(tick);
+    };
+    playTimer = requestAnimationFrame(tick);
+  }
+
+  function updateFormatHint() {
+    const mime = pickMime();
+    const el = $("formatHint");
+    if (!window.MediaRecorder) {
+      el.innerHTML = "このブラウザでは動画保存ができません。iPhoneならSafari、AndroidならChromeの最新版で開いてください。";
+      el.className = "hint warn";
+      return;
+    }
+    if (!mime) {
+      el.innerHTML = "このブラウザでは対応する動画形式が見つかりませんでした。Safariで開いてみてください。";
+      el.className = "hint warn";
+      return;
+    }
+    if (extFor(mime) === "webm") {
+      el.innerHTML = "このブラウザは WebM で書き出します。Instagramのストーリーズは MP4 が必要なので、<b>iPhoneのSafari</b>（またはPCのSafari）で開くとMP4で保存できることが多いです。";
+      el.className = "hint warn";
+    } else {
+      el.innerHTML = "このブラウザは MP4 で保存できます。ストーリーズにそのまま上げられます。";
+      el.className = "hint ok";
+    }
+  }
+
+  function copyLink() {
+    const url = location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        setStatus("リンクをコピーしました。Safari / Chrome のアドレス欄に貼ってください。", "ok");
+      }).catch(function () { prompt("このリンクをコピーしてください", url); });
+    } else {
+      prompt("このリンクをコピーしてください", url);
+    }
+  }
+
+  async function main() {
+    if (isLineBrowser() || isInAppBrowser()) {
+      $("lineBanner").classList.add("show");
+      if (!isLineBrowser()) {
+        $("lineBanner").innerHTML = "<strong>アプリ内ブラウザで開いています。</strong> 動画の保存ができないことがあります。右上のメニューから Safari または Chrome で開いてください。<div class=\"row\"><button type=\"button\" id=\"btnCopyUrl\">リンクをコピー</button></div>";
+      }
+    }
+    document.addEventListener("click", function (e) {
+      if (e.target && e.target.id === "btnCopyUrl") copyLink();
+    });
+
+    try { await openDb(); } catch (e) { console.warn("IndexedDB unavailable", e); }
+    await loadAll();
+    initSparkles();
+    fillMonthSelects();
+    bindDayListEvents();
+    refreshAll();
+    updateFormatHint();
+    try { await document.fonts.ready; buildStatic(); redrawPoster(); } catch (e) {}
+
+    $("storeName").addEventListener("input", function () {
+      state.storeName = $("storeName").value; scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("winnerName").addEventListener("input", function () {
+      state.winnerName = $("winnerName").value;
+      const rec = state.days[state.today] || (state.days[state.today] = { name:"", ox:0.5, oy:0.5 });
+      rec.name = state.winnerName;
+      const inp = document.querySelector("[data-name=\"" + state.today + "\"]");
+      if (inp) inp.value = state.winnerName;
+      scheduleSave();
+    });
+    $("year").addEventListener("change", changeMonthIfNeeded);
+    $("month").addEventListener("change", changeMonthIfNeeded);
+    $("today").addEventListener("change", function () {
+      state.today = Number($("today").value); refreshAll(); scheduleSave();
+    });
+    document.querySelectorAll(".theme-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.theme = b.dataset.theme; syncThemeButtons(); scheduleSave(); buildStatic(); redrawPoster();
+      });
+    });
+    $("color1").addEventListener("input", function () { state.color1 = $("color1").value; scheduleSave(); buildStatic(); redrawPoster(); });
+    $("color2").addEventListener("input", function () { state.color2 = $("color2").value; scheduleSave(); buildStatic(); redrawPoster(); });
+    $("logoFile").addEventListener("change", async function (e) {
+      if (!e.target.files[0]) return;
+      state.logoData = await readFile(e.target.files[0], 600, 0.9);
+      await setLogo(state.logoData);
+      scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("btnClearLogo").addEventListener("click", function () {
+      state.logoData = null; logoImg = null; $("logoFile").value=""; scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("winnerPhoto").addEventListener("change", async function (e) {
+      if (!e.target.files[0]) return;
+      await assignPhoto(state.today, e.target.files[0]);
+      e.target.value = "";
+    });
+    $("bulkPhotos").addEventListener("change", async function (e) {
+      const files = Array.from(e.target.files || []);
+      e.target.value = "";
+      const n = daysInMonth(state.year, state.month);
+      let i = 0;
+      for (let d = 1; d <= n && i < files.length; d++, i++) await assignPhoto(d, files[i]);
+      setStatus(Math.min(files.length, n) + "枚の写真を1日から順に入れました。", "ok");
+    });
+    $("btnPlay").addEventListener("click", function () { ensureAudio(); playPreview(); });
+    $("btnPng").addEventListener("click", async function () {
+      buildStatic();
+      drawFrame(wctx, DURATION - 1/FPS);
+      blitPreview();
+      const blob = await new Promise(function (r) { work.toBlob(r, "image/png"); });
+      await maybeShare(blob, fileBase() + ".png", "本日のPICK-UP");
+      setStatus("最終フレームのPNGを保存しました。", "ok");
+    });
+    $("btnVideo").addEventListener("click", async function () {
+      if (saving) return;
+      if (isLineBrowser()) {
+        setStatus("LINEの中では保存できないことがあります。Safari / Chrome で開いてから押してください。", "warn");
+      }
+      saving = true;
+      $("btnVideo").disabled = true;
+      stopPreview();
+      setStatus("動画を書き出しています… 約8秒かかります。画面を閉じないでください。");
+      setProgress(0);
+      try {
+        const result = await recordVideo();
+        const ext = extFor(result.mime);
+        await maybeShare(result.blob, fileBase() + "." + ext, "本日のPICK-UP");
+        if (ext === "webm") {
+          setStatus("WebMで保存しました。InstagramにはMP4が必要なので、可能ならiPhoneのSafariで開き直して保存してください。", "warn");
+        } else {
+          setStatus("MP4を保存しました。Instagramのストーリーズに上げられます。", "ok");
+        }
+      } catch (e) {
+        console.error(e);
+        setStatus(e.message || "書き出しに失敗しました。", "warn");
+      } finally {
+        saving = false;
+        $("btnVideo").disabled = false;
+        setProgress(null);
+        redrawPoster();
+      }
+    });
+    $("btnExport").addEventListener("click", async function () {
+      await saveAll();
+      const payload = Object.assign({ version: 1, logoData: state.logoData, days: {} }, metaPayload());
+      for (const k of Object.keys(state.days)) {
+        const v = state.days[k];
+        payload.days[k] = { name: v.name||"", ox: v.ox??0.5, oy: v.oy??0.5, photo: v.dataUrl||null };
+      }
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      downloadBlob(blob, "pickup_backup_" + monthKey() + ".json");
+      setStatus("バックアップを保存しました。", "ok");
+    });
+    $("importFile").addEventListener("change", async function (e) {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      if (!confirm("今の内容をバックアップの内容で上書きします。よろしいですか？")) return;
+      try {
+        const payload = JSON.parse(await f.text());
+        state.storeName = payload.storeName || "";
+        state.theme = payload.theme || "myumyu";
+        state.color1 = payload.color1 || state.color1;
+        state.color2 = payload.color2 || state.color2;
+        state.year = payload.year || state.year;
+        state.month = payload.month || state.month;
+        state.today = payload.today || state.today;
+        state.winnerName = payload.winnerName || "";
+        state.logoData = payload.logoData || null;
+        await setLogo(state.logoData);
+        state.days = {};
+        Object.keys(images).forEach(function (k) { delete images[k]; });
+        if (payload.days) {
+          for (const k of Object.keys(payload.days)) {
+            const v = payload.days[k];
+            const d = Number(k);
+            state.days[d] = { name: v.name||"", ox: v.ox??0.5, oy: v.oy??0.5, dataUrl: v.photo||null };
+            if (v.photo) await setDayImage(d, v.photo);
+          }
+        }
+        scheduleSave();
+        refreshAll();
+        setStatus("バックアップを読み込みました。", "ok");
+      } catch (err) {
+        setStatus("読み込めませんでした。ファイルを確認してください。", "warn");
+      }
+    });
+    $("btnReset").addEventListener("click", function () {
+      if (!confirm("この月の写真と名前をすべて消します。よろしいですか？")) return;
+      state.days = {};
+      state.winnerName = "";
+      Object.keys(images).forEach(function (k) { delete images[k]; });
+      scheduleSave();
+      refreshAll();
+      setStatus("この月のデータを消しました。", "ok");
+    });
+
+    window.__PICKUP_TEST__ = {
+      state: state, pickMime: pickMime, extFor: extFor, isLineBrowser: isLineBrowser,
+      drawAt: function (t) { buildStatic(); drawFrame(wctx, t); blitPreview(); return work.toDataURL("image/png"); },
+      setupSample: async function (winnerName) {
+        state.theme = "myumyu";
+        state.year = 2026; state.month = 11; state.today = 25;
+        state.storeName = "Myu Myu 川崎";
+        state.winnerName = winnerName || "サンプル";
+        for (let d = 1; d <= 25; d++) {
+          const url = makePlaceholderData(d, d === 25);
+          state.days[d] = { name: d === 25 ? state.winnerName : "", ox: 0.5, oy: 0.5, dataUrl: url };
+          await setDayImage(d, url);
+        }
+        refreshAll();
+        return true;
+      },
+      exportVideo: function () { return recordVideo(); },
+      exportPng: async function () {
+        buildStatic(); drawFrame(wctx, DURATION-1/FPS);
+        return await new Promise(function (r) { work.toBlob(r, "image/png"); });
+      }
+    };
+  }
+
+  function makePlaceholderData(day, isWinner) {
+    const c = document.createElement("canvas");
+    c.width = 600; c.height = 720;
+    const ctx = c.getContext("2d");
+    const h2rgb = function (h,s,v) {
+      const f = function (n) { const k = (n+h/60)%6; return v - v*s*Math.max(Math.min(k,4-k,1),0); };
+      return [f(5)*255, f(3)*255, f(1)*255].map(function (x) { return x|0; });
+    };
+    const hue = isWinner ? 330 : (320 + (day*17)%80);
+    const top = h2rgb(hue, 0.3, isWinner?0.78:0.62);
+    const bot = h2rgb(hue+12, 0.55, isWinner?0.32:0.28);
+    verticalGradient(ctx, 0, 0, 600, 720, top, bot);
+    ctx.fillStyle = "rgba(40,10,20,0.75)";
+    ctx.beginPath(); ctx.ellipse(300, 270, 110, 115, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(80, 740); ctx.lineTo(130, 430); ctx.lineTo(230, 410); ctx.lineTo(300, 390);
+    ctx.lineTo(370, 410); ctx.lineTo(470, 430); ctx.lineTo(520, 740); ctx.closePath(); ctx.fill();
+    fillRound(ctx, 90, 560, 420, 80, 10, "rgba(0,0,0,0.5)");
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 42px Cinzel, serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("SAMPLE", 300, 600);
+    return c.toDataURL("image/jpeg", 0.85);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", main);
+  else main();
+})();
+</script>
+</body>
+</html>

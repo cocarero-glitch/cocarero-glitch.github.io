@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="本日の出勤">
+<meta name="theme-color" content="#1a0a10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ff5a96'/%3E%3C/svg%3E">
+<title>本日の出勤ストーリー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #14080c;
+  --bg2: #221017;
+  --card: #2a141c;
+  --ink: #fdeef3;
+  --muted: #c9a3b0;
+  --accent: #ff5a96;
+  --accent-dim: #c4185a;
+  --gold: #e0b85a;
+  --line: rgba(255, 200, 220, 0.16);
+  --ok: #3ecf8e;
+  --warn: #f0c36a;
+  --danger: #ff6b7a;
+  --radius: 16px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 16px; line-height: 1.55;
+}
+body { padding-top: var(--safe-t); padding-bottom: calc(var(--safe-b) + 8px); }
+button, input, select, textarea { font: inherit; color: inherit; }
+img { max-width: 100%; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 12px 14px 40px; }
+.hero-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 2px 14px; }
+.hero-bar h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; font-weight: 700; }
+.hero-bar .sub { color: var(--muted); font-size: 0.78rem; }
+.banner-line {
+  display: none; background: #3a2410; border: 1px solid rgba(240, 195, 106, 0.45);
+  color: #ffe9b8; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.9rem;
+}
+.banner-line.show { display: block; }
+.banner-line strong { color: #fff; }
+.banner-line .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.banner-line button {
+  background: var(--gold); color: #2a1a00; border: 0; border-radius: 999px;
+  padding: 8px 14px; font-weight: 700; cursor: pointer;
+}
+.card {
+  background: linear-gradient(180deg, #2e161e, #241219);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 14px 18px; margin-bottom: 14px;
+}
+.card h2 { margin: 0 0 12px; font-size: 0.95rem; letter-spacing: 0.06em; color: var(--gold); font-weight: 700; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.4em; height: 1.4em; margin-right: 6px;
+  border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 0.78rem; font-weight: 700;
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .grid-2.collapse { grid-template-columns: 1fr; } }
+label.fld { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+label.fld > span { font-weight: 500; }
+input[type="text"], input[type="number"], input[type="color"], select, textarea {
+  width: 100%; background: #1a0c11; border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; color: var(--ink);
+}
+input[type="color"] { height: 42px; padding: 4px; }
+.themes { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-btn {
+  flex: 1 1 40%; min-width: 132px;
+  background: #1a0c11; border: 2px solid var(--line); border-radius: 12px;
+  padding: 10px 8px; cursor: pointer; text-align: center; font-size: 0.85rem;
+}
+.theme-btn.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 90, 150, 0.25); }
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 4px; }
+.custom-row { display: none; margin-top: 12px; }
+.custom-row.show { display: block; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 999px; padding: 12px 16px; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-gold { background: var(--gold); color: #2a1a00; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-dark { background: #1a0c11; color: var(--ink); border: 1px solid var(--line); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.btn-row .btn { flex: 1 1 auto; }
+.hint { font-size: 0.78rem; color: var(--muted); margin: 6px 0 0; }
+.warn { color: var(--warn); }
+.ok { color: var(--ok); }
+.preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.stage {
+  width: min(100%, 340px); aspect-ratio: 9 / 16; background: #000;
+  border-radius: 14px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.45); position: relative;
+}
+.stage canvas { width: 100%; height: 100%; display: block; }
+#work { position: absolute; left: -9999px; top: 0; width: 1080px; height: 1920px; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.toggle input { width: 18px; height: 18px; }
+.seg {
+  display: flex; width: 100%; border: 1px solid var(--line);
+  border-radius: 999px; overflow: hidden; background: #1a0c11;
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; color: var(--muted);
+  padding: 9px 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+}
+.seg button.on { background: var(--accent); color: #fff; }
+.status { min-height: 1.3em; font-size: 0.85rem; color: var(--muted); text-align: center; margin-top: 4px; }
+.progress { display: none; height: 6px; background: #1a0c11; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.progress.show { display: block; }
+.progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 10px 8px 20px; }
+.hidden { display: none !important; }
+
+.roster { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.person {
+  background: #1a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 10px;
+}
+.person.on { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255, 90, 150, 0.22); }
+.person-top { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; }
+.thumb {
+  width: 100%; aspect-ratio: 1 / 1.15; border-radius: 8px; overflow: hidden;
+  background: #2a1520; position: relative; touch-action: none; cursor: grab;
+}
+.thumb canvas, .thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.thumb .ph {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 0.72rem; text-align: center; padding: 6px;
+}
+.person-fields { display: flex; flex-direction: column; gap: 6px; }
+.person-fields input[type="text"] { padding: 8px 10px; font-size: 0.88rem; }
+.mini-row { display: flex; gap: 6px; }
+.mini-row label, .mini-row button {
+  flex: 1; font-size: 0.72rem; padding: 8px 0; text-align: center;
+  border-radius: 8px; border: 1px solid var(--line); background: #241016; cursor: pointer;
+}
+.person input[type="file"] { display: none; }
+.chk {
+  display: flex; align-items: center; gap: 8px;
+  background: #241016; border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-weight: 700; font-size: 0.85rem;
+  margin-top: 8px; cursor: pointer;
+}
+.chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+.today-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.today-item {
+  display: grid; grid-template-columns: 52px 56px 1fr auto; gap: 8px; align-items: center;
+  background: #1a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 8px;
+}
+.today-item .idx {
+  font-weight: 700; color: var(--gold); text-align: center; font-size: 0.9rem;
+}
+.today-item .mini-thumb {
+  width: 56px; height: 64px; border-radius: 8px; overflow: hidden; background: #2a1520;
+}
+.today-item .mini-thumb canvas { width: 100%; height: 100%; display: block; }
+.today-item .meta { min-width: 0; }
+.today-item .meta .nm { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-item .meta .sub { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ord { display: flex; flex-direction: column; gap: 4px; }
+.ord button, .today-item .off {
+  min-width: 44px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line);
+  background: #241016; color: var(--ink); cursor: pointer; font-weight: 700;
+}
+.today-item .off { margin-left: 0; }
+.count-pill {
+  display: inline-block; margin-left: 8px; font-size: 0.75rem; color: #fff;
+  background: var(--accent); border-radius: 999px; padding: 2px 8px; vertical-align: 1px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero-bar">
+    <div>
+      <h1>本日の出勤ストーリー</h1>
+      <div class="sub">名簿から今日の出勤を選んで、ストーリー用の動画を作ります</div>
+    </div>
+  </header>
+
+  <div id="lineBanner" class="banner-line">
+    <strong>LINEの中で開いています。</strong>
+    このままでは動画の保存ができないことがあります。右上の「…」から <b>Safari</b>（iPhone）または <b>Chrome</b>（Android）で開いてください。
+    <div class="row">
+      <button type="button" id="btnCopyUrl">リンクをコピー</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2><span class="step-num">1</span>店舗とデザイン</h2>
+    <label class="fld"><span>店舗名</span>
+      <input type="text" id="storeName" placeholder="例：Myu Myu 川崎" autocomplete="organization">
+    </label>
+    <p class="hint">テーマを選んでください。カスタムでは店の色とロゴを使えます。</p>
+    <div class="themes" id="themeBtns">
+      <button type="button" class="theme-btn on" data-theme="myumyu"><span class="swatch" style="background:#ff5a96;box-shadow:inset 8px 0 0 #1a0a10"></span>Myu Myu</button>
+      <button type="button" class="theme-btn" data-theme="blue"><span class="swatch" style="background:#1e82a5;box-shadow:inset 8px 0 0 #e8eef4"></span>ブルー</button>
+      <button type="button" class="theme-btn" data-theme="gojiai"><span class="swatch" style="background:#95d3ea;box-shadow:inset 8px 0 0 #bfa604"></span>ご自愛メシア</button>
+      <button type="button" class="theme-btn" data-theme="custom"><span class="swatch" style="background:linear-gradient(90deg,#ff5a96,#6a5acd)"></span>カスタム</button>
+    </div>
+    <div id="customRow" class="custom-row">
+      <div class="grid-2">
+        <label class="fld"><span>メインの色</span><input type="color" id="color1" value="#ff5a96"></label>
+        <label class="fld"><span>背景の色</span><input type="color" id="color2" value="#14080c"></label>
+      </div>
+    </div>
+    <div id="logoRow" class="custom-row">
+      <label class="fld" style="margin-top:8px"><span>ロゴ（任意）</span>
+        <input type="file" id="logoFile" accept="image/*">
+      </label>
+      <p class="hint" id="logoHint"></p>
+      <div class="btn-row"><button type="button" class="btn btn-ghost" id="btnClearLogo">ロゴをはずす</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">2</span>日付とフッター</h2>
+    <div class="grid-3">
+      <label class="fld"><span>年</span><input type="number" id="year" min="2020" max="2099" step="1"></label>
+      <label class="fld"><span>月</span><select id="month"></select></label>
+      <label class="fld"><span>日</span><select id="day"></select></label>
+    </div>
+    <label class="fld" style="margin-top:10px"><span>フッター（任意）</span>
+      <input type="text" id="footerText" placeholder="例：17:00〜LAST  |  @store_x" autocomplete="off">
+    </label>
+    <p class="hint">営業時間やXのアカウントなど、動画の一番下に出す一行です。空欄なら何も出ません。</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">3</span>キャスト名簿（くり返し使う）</h2>
+    <p class="hint">名前と写真は端末の中に残ります。毎日作り直さず、一度登録した名簿から選べます。</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-dark" id="btnAddCast">キャストを追加</button>
+      <label class="btn btn-dark" for="bulkPhotos">写真をまとめて追加</label>
+      <input type="file" id="bulkPhotos" accept="image/*" multiple class="hidden">
+    </div>
+    <div id="roster" class="roster"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">4</span>本日の出勤<span id="todayCount" class="count-pill hidden">0人</span></h2>
+    <p class="hint">名簿の「今日出勤」を入れると、ここに並びます。上がった順に、動画では左上からポンポン出てきます。矢印で順番を変えられます。最大12人です。</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" id="btnClearToday">本日の選択をクリア</button>
+    </div>
+    <div id="todayList" class="today-list"></div>
+    <p class="hint" id="todayEmpty">まだ選ばれていません。名簿から選んでください。</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">5</span>プレビューして保存</h2>
+    <div class="preview-wrap">
+      <div class="stage">
+        <canvas id="preview" width="540" height="960"></canvas>
+      </div>
+      <canvas id="work" width="1080" height="1920"></canvas>
+    </div>
+    <p class="hint" id="durationHint" style="text-align:center">動画の長さは出勤人数に合わせて自動で決まります。</p>
+    <label class="fld" style="margin-top:12px;width:100%;max-width:340px;margin-left:auto;margin-right:auto">
+      <span>キラキラの量</span>
+      <div class="seg" id="sparkleAmt" role="radiogroup" aria-label="キラキラの量">
+        <button type="button" data-sparkle="low">少なめ</button>
+        <button type="button" data-sparkle="mid">標準</button>
+        <button type="button" data-sparkle="high" class="on">多め</button>
+      </div>
+    </label>
+    <label class="toggle" style="margin-top:10px;justify-content:center">
+      <input type="checkbox" id="sfxOn"> 保存する動画に効果音を入れる（任意）
+    </label>
+    <div class="btn-row" style="margin-top:12px">
+      <button type="button" class="btn btn-ghost" id="btnPlay">プレビュー再生</button>
+      <button type="button" class="btn btn-accent" id="btnVideo">動画を保存</button>
+      <button type="button" class="btn btn-gold" id="btnPng">PNG保存</button>
+    </div>
+    <div class="progress" id="progress"><span></span></div>
+    <div class="status" id="status"></div>
+    <p class="hint" id="formatHint"></p>
+  </section>
+
+  <section class="card">
+    <h2>データのバックアップ</h2>
+    <p class="hint">名簿と写真はこの端末に自動で残ります。機種変更の前にバックアップを保存してください。</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-dark" id="btnExport">バックアップを保存</button>
+      <label class="btn btn-dark" for="importFile">バックアップを読み込む</label>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" id="btnResetRoster">名簿をすべて消す</button>
+    </div>
+  </section>
+
+  <footer class="note">
+    動画は 1080×1920（ストーリーズサイズ）で書き出します。このページは店の端末の中だけで動き、写真を外部に送りません。
+  </footer>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  const W = 1080, H = 1920, FPS = 30;
+  const WEEK_EN = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  const MAX_TODAY = 12;
+  const LS_KEY = "shukkin-story-v1";
+  const IDB_NAME = "shukkin-story";
+  const IDB_STORE = "photos";
+
+  const THEMES = {
+    myumyu: {
+      light: false,
+      bgTop: [18,8,14], bgBottom: [8,4,8],
+      glowA: [90,18,48], glowB: [160,40,90], glowC: [60,10,30],
+      accent: [255,92,150], accentDark: [196,28,90], accentLight: [255,186,210],
+      gold: [232,196,96], goldDark: [176,130,40],
+      header: [255,232,240,200], subheader: [255,230,240],
+      pill: [40,12,24,230], pillBorder: [255,120,170,160],
+      vertical: [255,200,220,200],
+      cellBorder: [255,230,238], labelBg: [255,244,248], labelFg: [160,30,80],
+      emptyTop: [90,24,54], emptyBottom: [36,8,22], emptyText: [255,240,246],
+      bannerBg: [16,4,10,248], bannerTitle: [255,228,200], bannerName: [255,250,252],
+      sparkle: [255,236,244]
+    },
+    blue: {
+      light: true,
+      bgTop: [232,238,244], bgBottom: [214,226,236],
+      glowA: [200,220,235], glowB: [180,210,230], glowC: [240,246,252],
+      accent: [30,130,165], accentDark: [18,80,120], accentLight: [120,200,220],
+      gold: [220,188,90], goldDark: [160,120,40],
+      header: [255,255,255,210], subheader: [20,110,145],
+      pill: [236,248,250,230], pillBorder: [160,210,220,160],
+      vertical: [255,255,255,210],
+      cellBorder: [255,255,255], labelBg: [255,255,255], labelFg: [20,110,145],
+      emptyTop: [110,196,214], emptyBottom: [22,90,160], emptyText: [255,255,255],
+      bannerBg: [12,24,44,250], bannerTitle: [255,255,255], bannerName: [255,255,255],
+      sparkle: [255,255,255]
+    },
+    gojiai: {
+      // Colors confirmed from official lit.link (https://lit.link/goziaimesia)
+      // background #95d3ea and crest/wordmark, and official X @gozimesi_akb icon.
+      // Deep teal text, darkened gold titles, and soft glows are inferred for contrast.
+      light: true,
+      clouds: true,
+      ornament: "halo",
+      sparkleSet: "gojiai",
+      vignette: "mist",
+      textShadow: true,
+      bgTop: [186, 226, 242],
+      bgBottom: [149, 211, 234],
+      glowA: [255, 255, 255],
+      glowB: [255, 244, 200],
+      glowC: [255, 210, 230],
+      accent: [48, 189, 208],
+      accentDark: [14, 110, 128],
+      accentLight: [116, 204, 218],
+      gold: [191, 166, 4],
+      goldDark: [120, 100, 8],
+      header: [255, 255, 255, 250],
+      subheader: [14, 90, 110],
+      pill: [255, 255, 255, 235],
+      pillBorder: [191, 166, 4, 180],
+      vertical: [255, 255, 255, 235],
+      cellBorder: [255, 255, 255],
+      labelBg: [255, 255, 255],
+      labelFg: [14, 90, 110],
+      emptyTop: [116, 204, 218],
+      emptyBottom: [40, 150, 180],
+      emptyText: [255, 255, 255],
+      bannerBg: [255, 255, 255, 255],
+      bannerTitle: [120, 100, 8],
+      bannerName: [14, 90, 110],
+      sparkle: [255, 255, 255],
+      logo: "data:image/webp;base64,UklGRgpYAABXRUJQVlA4WAoAAAAQAAAA2wAA+AAAQUxQSOwSAAABwIb/n2o7rX7/mVnnJDQerA2eQHEqSWngckPdixQCdcFd645b3Q13d4LUHXert9AIDjknOWvm//+92Huvvc9ae8957n0VEROA//fvnHMTl4msw+tuvmUHuIkJ5DHy74KJylOqKyYCzktPlpJLeyLe5RUA6cUycrnvgSCvRbb//AaQ3qwY7k6w/mcWOskmj72U/3qFSFdTnyafnQ3pQmTdf5Ifgs+lgOO5kieJ70Iw53nyxU268vgiV/IUhHx6vyZb9XIn1Rw2X0mOLYSrJm7WCxb5URS5JDL57xzj2fDVPN5uNNsDvlrAD1nyn9NEcgke39WYnt1GfKWAw6mJn0ao5N1WT6WoZ8Ijmx22pCmvhOviZMaS30RRyeF8JuM2cPkkfo1rGI07wlcp8F2WJb9TzWE+NfIXazjJJxQ4yFLkL4e9VPp2d+LDEsbEwxCQ0SLTn6Umeyd8pe+1fL+SlzfHpHxupkhOQXCxJeUDkEo/avkJQgXBXdRkV0OQ1V4WMjHyQIROHmcxRl4I1yngI4xM3Fl8Xglm3M+k9vgsLx0kLGFU/nEyXDsJMx+0pHx8TUheIeBUJiZ+Br6NDIV5y03NVm0ThqSNx1FMjPwWCmSsD64HIhuvopm+tBG8+BAAbMlEJm4BIAQvDnOeUzNbtYW4HrgQcgGAl64A/NmUkT8tAgBMeu/unzIllZ/a/d1TAcC7bzNS7S70UDwyUSDHXftqwHUV5IOMpOm2mP3+q6+/k5Xvu+GaD6+JzUaNjPyIhK6cYOurT/aQwedxMjn2+UkounEy99+mND58USTJVMZ2sUwkGa94hEbV/2wqrpsC4ZgR8gz4wRdwXxwl79oM4quhwCWMbGsxJlZOMRpJIyOvQIHqXjDvz+RoeR/C4PM4hNTI0ROAQip597ZkJC2xx8lImi12oZIUwJeeZ1TjUfCDDx6HJyYl79gZ8BU8sFhZQ/so4Ct44H/+QKZEHo1CMgAe713BxEh+cya8tPOYfD7Nxs+MF06FbycBM05TRkt8ak945GHAdncxUpUP/S8QWgJ2vI+RtUx8eGeElgDs+CBNGXn/axGQiwFTb2JpLMnvz4JzGMKuI4ysaeTqPTAE8Zj5fbIkS942EwH56CCXkUZNXLEHUOCDpLKH1huqcR8UwC5LqUozXu3hkJNO3FdIJRN5y6b4MJOyxpr4UWx0IxlJJU8N4pGXIth7NRNpypXfJo21Nuo3nqcamVh+DBDkpngsWslEMpE01txIJpKJI2+CF2Rogfn/YiRpkTW0LshoJCP/sQAFMtF576UCAja4jcoGK3+7EQIqivfeDSbxhUdrIZ3gMeUsanOU506FR2cp0OoLLwNGggDAvO23X+AA1wlO8ENqUxLPBRw6OwAL5m8/DwAkyOAQB2DqfhdetZxMvz53O7hOKNxXmZoSeaobQmePbc79ZUpcfuVF+00F4GVABEB2+9lKdh7dF76Dk01XmTXFrNxSXAePD46w88oLdhMgDALnMfzhP5G0GNXMUkl9E1wHnMbExiZ+Dx0cdhxjmcxMYzSSf/rEZHjX77wHdv0DmZKxs9pTm4trEZnxFLU5yufWEWlxstkKKjtbSuQduwPO9zHnHLDFJaQmVo/8STHknfdDOEojGxztWAx57/xw+CZLVk9KXr4t4JzrSxICgDf9MFGVXevoDLSdfhtTkxJ/PRNtp7+k7FqVPOdNAEKQfiMCYJt9Hos0ZQ+NH3/9Thu9doc116ey0coNZ+/w2o12ev3HaR2sE02V8bF9twEg0l+A2YefE0lG9tZIriAf3UWtWaZvf5hcQdLY20gynXP4bPRVcTN/8hzJpMZep5SoidHY9FVMypQSe22aSD53ySwn/SPgw6RG4/gaqeyDShrH16KSH0XoHwUO5Rhrac0z1nKMh6LoH+Ln3GRaiwGpdtMcL/0jAIuZE9wfCH1CvMOap8Zk7SwDLPGMNeG89AEPYJ/HmZnKx/cH4JsmArzzT2SyPmD9hIm8e9cA75sF7LaEVGW/t9pRlfzlYog0SGT69WRSZqlG8sZZIs3xOJspMVtT4tXwTfoJEwe2jY+RZOKVTRKZdgPTwKph4q2zRBpUhCvz5npfNCjgWCrraAOKyk8hNMZjwfNlPQa2li++Dr4hzr1iKZVZq3x6Q+caIQEXMXG8bcAx8ip4aYLHcSyZvZEnwTcg4HAmZnDi0ShqF/AuJsshS9wdoWYem/9HlVmsumJb+Fp5zHyQykxWPjIbvkYeU//MxGxOvHMafG081rqbkQPc6sbIe9aGr4nHjDsYmdWRd86Cr4VgkwdYMrNLPvRKSA0cdv4PE7M78ck3wo2bYPgJRmZ45PIpkPGbNmqWY2arZtagwGmMORZ5OorxEsGHXlLLMdORDwMyLgFDXyCNWW7kiZMReidD2OhXNGa78fcbI0hvJAC7/Icx4xj5372BID1wwEbnkZFZn8iLNwVcN04w/aCXqMY+aIOMljh6yCw4V0kguz9IRpr2gYFuxkQ+spuHVHDY9hqyJJMxk816RCYykje8Fq6Dk02fY0qalLwjNsoGR4+N/yU1aVK+uLm4DjjWVpaJ5E3vPXCVWoMGfeRFb7+KpJYjdjwqHEWSj1y29eyfkMZ8Nzt35hYXPUySX+0kmHH4EQd9aAo2uJuRWa+8b2OssfigI4+YCWnX+YurmJj5iau/jK4lDGHDC8nE7Ffysk1RBKkk+OCzjEZGJRlTfqVIUiNpkS98DFLJ4YtkNFUjLSmpNMsnMyqpSUmqWiSPQyVgdGx1JMnvf5Xk1SdwzNiqpeaMltpCG+MJl5E84dskGVePjaKy4Hckn3rgU1sCW79qWxTLyaUpJmP2WorpCfKpYWz76m2BLY68fxnJ2yHVphz5mcPnAvAOgPfbfG7xLiT5wGfvp+WK8d7PPkCS79zrc5t5D8B5AOsf/pmjp8JV6eicA5xzaN3iN7+5esdp+Bk1V5QXY9rCK37zm23Q6pwDnHPopRRF4VDRFQFtN15OyxXjU5uibSgcKrqiKKSbXkoIflgOZ2S2ljwWwz4EQTPFuXNzJvLKIILGCl4+yqwt14NrjsN8Ws4YFzbrDGrOKH8M3xyPPzLlTOLtTXA+hBC8ZNCf4ZwPIQTvaiHBo+rsv1JzRvnvV6CqDzI+4gH44a32Oe5LX/n8Hhv4hatpOcOUdvMbvu+LX/nScftsNewB+PHwwPCuxzzy/Gq2HXn4Virzhrc9PMK2q59/5Jjd1gB8zxyGP3Y7Wy2lpMzmlFIytt51xGS4HjnscAcZo5mxrZnmj5qxrZnFSN67E1xPPN44Sk3M+pQ49k7xPRAUf2di9icunQzpzuMYJk4AEz8P312QX1icCET7hYQe4HpODHgduhPZ4O/UiYDyibniugnYiyUnhCU/hNCNw3csTgySnQnpBu631ImB8XaHrsN9LaZJ802TWstDoTt/f0trir2x7EmJbY2P9ABXmSoXLVxyH0nVHmSuKsn7bt1pEVXtVukq4CCWykUAPvhjJWNeRVLP/JAAr6OWPAShGy/zn4+RV7shAV5+yhO0nDI++fWXAzLkLmIsn3+9+G4Q8C2OxofhEQTY+FjVfFL99CaABHg8Gkd4FgK6Fj/tj+Ql8ABkCJ9mqmKZk3gChgSAxwXkPbOCdAfB1He/ZzpaAw5jYkYnHomA1invedcsOPTSo6PDq00tp0w5H66lVdBb8V5a/NCvmJjVib+d3Ea8dxjfgF2YmNmJeyOgjiLh55Zdan8cEqkFXsEs3xC18HKaaX4l+7GEOgTcxJhfkUtQB4cZD1LzS/nomnDj5/EGmuWXmb0ZYfwCdmFihpfcsx57ssyzxfVY/H9GlvIkWV9QZqs24n2MlZS/esdqWm4Y49tvZWrCO6hVTJ+chRMZcyPxu5j5T9Mqie+pg8erV9I6WeLeCLtwLDdKvidgVybrZCwXwo+fuEm/Z+qUeAom4d1MGWBd2J6YhJOYOinvnCoyfghYorFD4p3iikzoMnJ3FB6/ZuoQ9VYE1NBhMVM7iyMLxTtssYKWF8YXtoPzsmBltHaJ+8DXQVx4kGWbxG/CQ5z8mTEvIu9wIvA4g6lNyceGnNQBzq3/F5ZJ0+p0/9QgwJA/wjQvlMe6IUCKqXel1UnTGP+6gXOop8OcP7DtJxAAB+w8ZpYVpm8FHBDwYbb941w41NUjvOurl3zvsDdDIAFvW7KKxrxgectbUQgEbzz0u5cc9+4CHvUVtPeAx5eYqcfDAx7tBXWW4ES8BwI+wxQtPyxGfgnDDt47cUHQSId9mJipkYfDo8nipv9TNVdUn5jlpEkFDmVitkYejaJJzp1nMWPsci/SHIdXrGTWjs6Ba9ImtJwxzm3W9pY3tmOzDqTmjPJTTfK4jClnEm+Ab9KNufPLCc2vmnV17tzWrKOpOaP8UpMcdjDLGbO3wDVpLvOGr2ySYM1/meWL2bK1Ic1BwDdYDiCrS8nvw6NJ7u0jav3LelZbHX2vC03y2GAFtX81Xfn0XPgGBcxfSmO2Gp9ZgNAYj9c/TWXGKp/eAb4hTjb6LxOzVrl8nrhGiJMljMzcyF94J01w+DJLZm/J4+AaIJjzkln+mK1aD1K/Aj9gyQyO/D6K2jlZ73HTHFL7x4bi6ubxZkZmceSb4ev3xpRL6Y1NeCvLPCr51vo5N/cf1IFmdVE+salzdYPDBveY1c36Sl3NHtsEDvX3+DJj3QZx5CnwaGBw7+OYtrUcMW07xj1caIK4Wfczgx9ey0kT4DD3nmXLn3zs3nteyJEX7773sSeWLb13LhyaKZBN5s4ZAu6k5obycWDoFZtsLBA01aHVrfE8LTeML63h0OrQXHHOCYaz5LlhiHNO0Pg8eX4YfbIWNqEZuMbn+scLeWBWbeWkfiG/oFaxNKiqGx8IfSJgH4tVSOvKBoOOPUHrFO0Y+H6xmGUn4/Lrqd0MxsRvfJ1lp5J7I/QHhy2eTdrJXtrq9yzrZJpijLELizHGpFankve86kVaB00vbgPfH+DxHZbWTpXrr/8XxjqYaYoxclxjjEnN6pD4jw1frqbtbIw/gEefFPeyK8nUkiKPDNjkHiYdp1ga24/+6/ZbLr/wqkrGZy658LJb7vj3SnYs4zhZ4kPzEA5mTC2JvH6Kk34BgexTMqYUyZM8AmZcSka1XqkmI7li6e8/8563vXm79ScDCLFK4iUAsMYG277lbe85+ndLl5O0pNor00heNxtB8BUyphQZDy4g6J/isNOdJHn3RyGAAAf+h72OSpJXfPvDL0NnKYqXj1SJ/EYYDoLOkz/w7ctIUmNvSD59MCCAwwduJ8l7d4YT9FWPqQvmz18wDQ4ARLDBwtPuofWC/NvVi7ZDW+dD8E5EsPYYrco34SDifAjeoe12i676K3tqfOC0hfMgDgAcpiyYP3/BTHj0W4e2Hq0hAMDbqV0Z9YJ9AgApvKCiYNrfq5Q8GR5VxRcCwH38fKV1pdwFAHxogUdbh/4r3nsvAMQB2HrhFx9cxh5G7oXgnBdUF+AapipHI1QCIL4IAbswsofLHvzSwq0BeAdAvPde0Mc9MPmws8fYY+XjU0TQtQDXdlN00yove4Dai9axcw4vAI/+7zHtU8tIJlXrBZWfgu+FXF7tqJ54HEJlL001kVz26Zlwfc9jj3tIjcZeR70BoTt4fJlllcN6EnCdxp60WlTywT3h+pyXj5DROI5ljwK+UAsre0bSInkgfH8LeCytZo9NVTUp94dvhsdHqUlV1XpDrk4PI/Q3jzPI2KOOx0HQwwJHjB8EnzSOZyK/C9/fIP70Z2i9MN559e1/uP1zW0F6dFgdBFt87vY/3HHVb6i9MD7z9UmC/r/ZuUbrTnk32gp6Wg/Aoe3tvTDa+ZtjAMokHMrI7o22lQvOOTQJzjnv1ou07hh5KCZJ/4OXM1lWMWtnI/Mg6HltAAjmjlg7M6tQ8nznB4DDnGW0NhrLkqSWZSwTR6bW6PDxmfIiUyzLUknGMmob4wsbwg2CbamkaYokaS+uZtulH4JDTSL3RegdBIufZNuxl5QkY1Ijla8ZDPuaWiTJpeededbbZm55zJln/vTMIyZBUBMz7jIuEEw+8Mwzf3bmMduttehrZ567lCSjqR0+GE6wkuS/Tl+0Cao71Ea51/jAofomi078F8lSvzEYdiVHf7Q7AISicOJCURRFwPgWONQqWPnWcYL4oiiK4MSFIgDAbj8YIRcPAkC22m4eIM471LfAMeykXDEPbny6dN4JMHe7V2Fweo96e+z8vFq7xEemiNSo1XsMTucc6i7Ag9ROf4ZD7Z1zg6KRTu5m6nS3+PrlrcedVW7BhOO3nZQHwk0sHD5q2unVE48t2UnnTjw2HLE2iUuGRSYWcP4sxpaSJ6LABLPAp9uYjrwTfqLhsNEKGqn8NwQTTsEDVDLpN+EmHk72ZiQjXwc/8fCyBTWO8c6ZIhMPePkQyfg2eExMX7XjjltDMDH1AOAxUfXeO/y/f1ZQOCD4RAAAEK8AnQEq3AD5AD5NHItEIqGhGW2lbCgExLY3cGAAMrDMX8B+QHcuyf6L+x/lZ+YHyqVn+w/3X9F/2j9qvl11hdN/8jzlfLP1r/Uf4T97f8Z9Af9d/vvYZ/Uv8F/1Pz/+gL9SP9J/c/8x/4P858aXqM/b78o/gD/Qv7t/4f8P+//y/f77/pf5D3Rf2T/Y/9H3Af51/ef+37Wf/D///uPf4X/lf//3BP6F/gf/X65/7Y/BT/Xv9l+2H+/+Qv+i/4X/0/tv/7vkA/93qAf+P1AOxG/s34e/oh5R/2n8ff299Xfxr5n/Ff3H9yv7/8aPznj79J/hv/D/ePVb+T/c79Z/dfP/vh/Kf1H/ieoL+Qfzr/Uf3/05Pi/+b/k/8B3zOm/4b/mf572BfXr6L/wP8B/n/2m9Fj+z9BP0L+4f7j/IfAB/Mv6v/wfV3/ZeBF9u/2P/K/zPwA/y7+s/8r/E/6z9uPpT/j//N/lf9t+7Ps+/Nf8J/6P8r/qfkF/lH9U/5v9//0Hvf/+n3IfuF/3PdR/YL/r/nu5KpEoJwKRqVsWdkZKFmlQmWPdUfmkxOYWgsVKqRKpEnrvdD6doTpHJM1BzGUM+AXF1Ubt9p8xfLd0vRxjJEEhaU4gtpaEBwrpg1+WLKfa0njet/7v5VnX1ADd9RMtJZwx0T43llpl7kx2R1d1Rxv+C+xrOcWHIsF6h+I3Xbh9t2OtAwNQxhc3lgJnzE15+LWI4WRVofDaaGp9bwjBvlp7JaXhuGw4er2/PkPRNSltnfyzzF5alLqmu/k362ZZ25BdobS2BK+roNOkDxTLOon3aSEiQ43kX7GRkpVlaLdj0DNAk6VX/6HJWKru8c9gWsn2eh9emi+sv04QR2wDypvgARDz292sJ4Pg5lNMIjiv2VoAO5kg7urC5d0MaiyeQL1KEy8BrWq4eO6Yq6wa/BfEAIWjhjAEG0f328L/YAOyypslJ4aQMLuAvGEQ8PDP36eIroiKpX2ej8KGnkMrCB/nMpWq206EWtDQ1C254RjQK7+yb7AI9fLtv4VwIuum5UEkIHtQTNtfb1U4jOJeFoYHlDAhOWQ5v0FVUYdRBcFrJtn/ekt3MQ/I5ZJfFQZTNEW+nziFiqzYJwyvg9u6WeN03mmIhI2DkihWGoqN5SDj7Cw1b5Ybsqe9vq6tglTpEuaF0ySLX+R/7WnXhn9Y6Pi57ASFGDYQMw7Cze9K0KVO86sEIR3cQ/zcRoh29m/T8QcO7G7nNM4ZjQ49UXpog4nOVIAsCCZJGdgZHrxKL8OGXxzkgum/Qg77AAqYu3hkARFD3JvDpEdnhyeZhA5hqfWyYEtPL/5sQ13qEgHuNcC8WkOEtdKijSrEXYa/c8+DgFjRLP81jCzhTMYekUD4OMFZDcS7KM5RfHFSd7zhWH9hvrOE3JSiTLvdE/Sazmj1NSTaxjZrpD32xrXoicY7HH35+FSc0Hi76VwZQbyoJFJFd9uqkfM4vq0URwmIIguNoIZvJUd6+CbCsfQlzPPZ2TkoT7ScPPrYTkGObL5gzUWod1yfXxsYw1QXb6TuhFoYMquyn/V72r4TbAxgmH2Jvf77ryODrb/FjO4/WhHkyrPFrHKduuTLTztrNRvjcnQLj3gYvkAqYiw4nCdTNfpYkAd6hZmybG86EDyx7vrkdnfuxEP1dZ2NQx9Pdcql0R58dabfXt2WvEridfX09DkzSRmCF3e7Stu0+EIn/fvdFk6XAVu2XmIXgkQOUQ6sLSeKDoalMjs/5X9wbFDEK5idWrN3XzXUK5r3Do7deuhKvOvTXk+X+ONc/fiwRJPtwoKiq8TNzqq0iS+7goG7/2IJlgWgmoQkeNhcVc8TY/OzYoKign8kEQu3beLcmKXWFAKAA/vHGgbfmoAq1liushm3k9fXFf8mGkEHNYEDIRTpMpK/KVzo2I3pi5J78MAnapJBvNK9O1p1w1sTqT31Or5o40vR0kRN1pInyeLyI46VDLGF78HNTzqxaBrnZQO7PyzQRmKw/a49gWUMGsKFhwQp4/XZJQtDARH1H3+jQ9tuNJV3G4LvOaJObxeK4X0G6j6ZbgSXw8fZTDSw3wKHmxXMnq1cInxYFBV92WSvnG7hpHSeICukFB0VlySRKtZFbU3FhNZA67CJBp220mDcJZKPQeMF+VsNWX8m0Hu+eqnRAupz7gB8NTL2dwgEM8nAJmgYlmhKxHEL1WkShfsvrDKv1f8mD6DIl1vZwtUcJq0sw5s6mFdqsvekIABheM+2K4YT27yVQLZyxZ2d6R+9gfwxqR/fXt6wvpcygPUp+otw6+HeibeUhGEqqMuzG/3ZJKQ3QrDIJ6SKihi//LQ4p17RRnqeRWDZAb0neelKVKX21t4Rfi8I2vl27BgVn4/iK/14E37zW1EY+iHg/oEFs9uJsDSsTd+MNqlxfo0CuE7xePTFfAJ4Cw7MBjJ9C2oxrH4D5mwvN0lb4zIE/1ImEu3/r3gl53RwF5YYoaJVs+pn1irv8pCM/PUbtJAJuMDE9f0joc/GrbJeVrNjz91TA/VZIQ0cvZ39Q9R4fYB2XmHo2sfTPUF2MfrPRB6H9JFbFSeijG1krQd21vvv5mB8ygTv7ZnlSCs9RFmZq8BYEPrWTlyMZN1lO2pOlC14ca9evx0kab94hosijge8D8OURosOjxsFm+nQK6LQKPsroXLMyrEGOI0nHq2zwmktR8mXnhOjud1izsE4/qaCiz1p8gnPWo6TCQSFFy1/K7cK+qBRqdpcWJIXos53mNM2ibwF5xXl42LBasyG48cnO6iYi8/cHexeIA6SKopKR46KA1Ih//VwaMM4jDN+A0WIKMt64kWmhNFUyd0QxFEFt+nL2APJqcznSEftsh0A0TTnzPfg69yjbvdfrJ6R4/CJ1w5Zm9VoBhzrLpOt6urXFZ4xtaS+ETR0ut8UBERzu8xbF5/HvGOPngIzP365l71T8vAbi2byo9gYAkPIrQpp3mqjRl9a0ZkwCj+W+v/wP8PQ1WKkvLduGycsYQXlm5DNpvH+tGITlJnp/FJFs60BsrNzfUDTmZ8gRwE7Tk3+1h+1jvzd+CogMXHxkkBIA1D6Ex052PTt5efvXecV03ueZNpjZwrBb8wDg3p/ZyHSRc2PTCU+j47537EfblacpkqXAIgaYYWNMf4k0eGUsB/bmq23mOyEY0/cS8XdX+jzTUBfHElqKJNEPQF/KcHzgKNO39XkX97dh55itCUqzJIg8ZxnpgpFrCMxy4XsxLl1AwGNp0sIXTkoGaolNl9ulvilO/M3/VaTbOE48S1HU4pWjLTp7HuEVaITqVZS2cfQ2FSPcWvNg/SJ6OyGczfCOKFYfOLdf92IzoVIL0fsirOGG1/478+DhmdUObxguXAVj+Z6ARflssO0QJN+IS5/yQaT+ujDaq+nwJEaIrGKGbn9A/lxlJbSi75ZrolPKsgafNRt/BBAZ1PBbjYJxkrQQjaklqS8YC0ER0QEO1HJolb8CQ7yE8SY1GMDStdurqEAuLI00rkpL64H8CWqyUffWmLMD9EMGHRTjJRkzRjopB2vDSDuowPrD9QJUF4kgbwTrmSanNK9h3VCoAidK1IVmlO+HwUFWTNkAWpP5NVInX+xYuc/C0ckFowAB+uzesyiqypecbNQQUKAxvdBUroM2QYQUTPDf98CMGo55CR//dH+1aP8gWOViBe5oHCzDzwp8dJKv+84BrnQWceDo97egGVRD03nUpBgUEuFTFowxVud/aOC1hKuTaZ8pxlSALP3lmeUF5+xDzpyh5XiHACh/hTEKXj/Pn5LF6k+Qk0+BskbgawxXddhEGPPIwUzU+55qpvfmMgu9zcMLf92wb8vXjuotwOMQxHSKZW9DoTH1mAzMmzaDYUd70lEqT3QpXIwvxlB2F6eQw521n3VscI7arnGET0mwOV/LWbcvfaeFewIDlVqO7iVk83gugEy4rlJNeYIE742XL+wEMvEVsDkr9oGjAGatUjLLADSGlEGZVTl5OWa0p89qGnW1WcIuXeFJO/GriRPHxyqiFFjYTAvcb6u/l6hAxCjr8GyUnWTk4PwSEAYoy9iqsJNUXhh4aAoOaLqYUfsTGAa+NXRLnlzljQP2EfKUvisdWJq1WdGNbtLvGL55AiMOJtFmENOQxa3pbOYJQ9mYjJ8wPwsPIXOnLxFynurgqVCgcuDkGAiB9wYoXcK7DID9MQKT5dxQ7PZfRCTvm6yaOqSlAo2oCyYTMhjea99qWXhvszbLzCZKbhZ+Cn9eo66gIYnHu7D9hxUl9KGZ/kBtAfV7Q56GsNvBb4VbJxC55HcsMpmpAFP41P1JeeYXJNHkJ+s/DUuL8EaLoXfzkOxLyhidBmyzHzRSLOwsUHewu4pF+SRSq8diuIMjGGvaRTXOaFGQxDy/xXDmrsz94Brj8wJJT8ODBQfIuwpT5tOUXq21JxDJybLJWIaGJMXP1GUeWL/1YfzL15ALQWcca1dsh+KNB2cfJyIuQmv+JKvJ0nFZhqY3plt7BS0AFbCiTL6c3NtzclEOZU82KYTk90f6gyqgXEb87eAcNOnnpGMx19yrG7DJpXjJ3CrfQX5fKFHEj3wD8ApLmvbELebeCFCzjt/P9Wj90yLXZOy0v82tPtkcvxXlz+peWBDahKJFavW0NjW4c6LxdofBvDt10QvODo1xkPQLkBDJSUk52xETjoFZRYcThl3vdgm4AP7hKljLmfO3aNVKJnbTaatBAU+mkbi9zKbYPDC6WVEBqnbJY+x+np75Tl2DHRK6uo9vNBGymgKEt+X9bmHWgh8y42YuJsQQbhsQ6XMrlvRm6xv+h7q3LX+h/gDaxwyb4PCI+kzYGsLfIhJ9n4Y5LMYCXFouYDjqw17wF8Z9f8E3K+cm33oCPaCzQjkYMKhWwtUNfqBI0FuOmCb2CNKGHPFhwRfEyOhF1Cw6tXz8KBJW4o9j4Ff/wVexBN4iUTLignV9vVqV4LM81kNPSDDYQ9oh5qGJoLnDr49mj3SWBimzFD6z9qbZ9JLZ2WdDekG+vYC2Mon0Zc1x5yVIhnnMrqnjKC5Fv1ZHuRfJRdMaJYyzSQJJ+CYpWUE6bltFh/bVetS9AYCNvSFK6/QqWssfrNZh+0+y1HLp+aKMf5VXxqRvYWkma5Ga1VFD+eJtMeRi3GmsjJ8K7Tb1rffJItAjD4h/qYdtPMvW4aAforAKyYIwJPH1xZf5PeispXdT+xmyzR7RM8q4vVW06XKeNg8aKwQnZNrs9rpnxrEm21DZopyvpc0YFkiA/TM9DvFhIH2//3UUSMze45BELM/bmnt5IziExiHatAcxuJfDu7xm/bXdhNdMH6je1hwyr+/22NCEwYl7PojCldBEegOKgBRuVf8liYMBk2tA2mMwW1Juvkyqgw5IvGu1+ACGMIVJ6yZgzUS7hIn+D/DtFjFI6E/+9zpLCtX6208c9OkA0qZuWEHz5ZZaIacbHI/A5RC2RnvLwCqwesx1eRxKP+1yrpNhG/gAetoV/gSI/iQlALwx5RMqAuxO3hGpWoaX3R8FAPZvE0vttLtDdg63QyaiGiof8K0a0JHaP2YyPkWXDnQd+rT0XZcgelhtI3+KdRoQv5E2TjYSUUDd//neMKaEVNG2YzDUx8Zz7Li6uybMg+2GRTPe2mTlPlmFZk8ILGa3pNDMtFcdEkveyDtA6jtvcEzKGyUGlP08eGk+6rfiaaf1IzTd832vxm/fav738Y4XfccBQBwnZeZ5HJrSRMJF+6WDffQ/DiG3uNG9d0e73zECkKNeLWtOWHHkDUBUJ2tSjpCt+qelYebu9tTlfV6J+qoSaHx5pmio6hMLqj/n6Cq0gctDupesduzR+jSpNa7yQVbYRJZ9XqCpuAGeo8g6vfd/jwE8byU6D0Qjnbz1Z03PWoItLpVVEMGrd7a47v0qPNMr1q33TOVJCwC8MBXMPJv6gGZ4MkVlNEve8CnyVr/Y47UuxUIX9TiNOL3azwnlOM2EHAoMiPOdao+34at2aHBQ2bEdb7S3Lkl1HEx4Rpq4rXG73tpTaR5mCyp1tOTedzkdPNI+mbvUQUu9ICIZ5NcqeMSyrxMyxlHqOHOfO0zaIE58F+tVumBMo+qny6VYyklRQLnr0nMVGhAb5juflkrnumQl/4JVlFoeS0D1jBafV3aAZIaUMVSpMYn9EgDlwFyRJPoonBUhHmp8B50BmORgUXVNbED9hHV6AoubhQLJrMYKwZRJlndS5lDBgOMAtt8r0VxQkLERRTWM+a5JnMsl+8YhkIzKroVNhB9UAmzoEZfi4OI8RJoTZQPiodsv2r+Z114Hd3aUYxpbhEWpWmQ8CRAjDfOHotmKRi5xZFeKl80hyvwGvD16UeL1pNAO8peGS4YPE2k9D/eJGAyO7XrqjkQfbPp2q3YGgknmP+YkeA/EaWKpoi5whrhHMzo9b50AcV+vOTLDtRUKTJixVvYXLPNE4BSPuVy8qkdTDLAo4Vzd50PzuuamOLugSNDA0id3fD3/nlZlwyIeaKu7xqzyWBt43lc+3eYD8id9lw2nd20g7R1yGRj/DIRrxdxrblTqPulHYj2c7mxQSkdRCgy67BnRHRiEQeL/FnPkO43V38lLsxOfeX3pOh+/USlEeVEtD15yElOybFa6rUjNf7olZzM7rgDk0QkXAc0shwgJ72rm6D+vMUY7R+TAUnMOD2VDeEj/fC/sDCepuxB34xpj8NtfhqX2JzrvDsnbIY0e5l7xa9vCGObX04ex6cKCeC14fcPZfjOz8JaKtc16yCxhkyK66ZbEYr+DnBJitFE8kQsQTZ810gBN4b0MpgNEhhusA8s+1Xd0QroEwFOaX1LVas5VBXpOZR4AqwWDUW/8lPJsEvfYLcW/V3GKTtjeh7GhYgwzgTx82l0yBvby/1KzeoJgCC/gWqiSPxTl2jE2G2splpzHvhXFEMD8hTKWpBjw6XZZUnd2E3+FdUSjO1FD+zRUcD/frTkSX9t07YLvsJQzQ8Z25kNHQVQzQFkdLKpj1YJmxsO8QdkA7HSRRfBIbLngGlvc/TiaDH9eOteydbXmNWCg6h/w0v98/GGQk84TaYae1h38tQnTOmUGWLnfxFdgJiX5QmfVFUFxGsDtQxccaIRvWxzrmwfRvPWlUzzsm04yENQGGrIVYAhvEtL+VnTLlbbA7i+9256snXBJ5mSEfZPq3zLHRCovHmPPw5LkWZ64s2nQBAXmGCAmgw84EaHs5gsYWBHPpjHhqxe7HdzK6QBs+AJcqM14APlZi8U7+DE7nqBbrnVA4MjI2QvXNO/+h/cZiyuiwG/wlhcLUxw/Lo0BYaU9PkTO62AvIOT0ysp5JOFYcPVzl/+z5eovKhOzLfXyYSsRcaM25BZUYI/yFH/SjQUqgd+Fko/RSwz1cuK/Oq250PuBOakMUtxQHzh/SD7xQzCg1hFHjctzkOYvA5TwRK/LHATi2fPH5KbE6y1onCMGU0Rg6i0F7zeuDY5LvLWUcm/WhDNVlnOq7KqZJXsr8XCR7mJaCo/lQXd7dEVJpJt8/p8PH0liABhapli6c9YZsoag8q7Uattd+RHVzi9uwbw9J11qHtO1N5T8L3uxk8fiFybM3gjJ1BRnwl+fiiK6ZXwagRbuj2/WpIzPAAI3ByOBZ/1hPBhMy8QaejphvACbA3/Ux+20N7Xvm9kaF6JNGX78Iq7fwngnQ0NP+WwgD0fUj69alnRYA5VgaJHhRD7jcuyYibgBHQJakv86c+kIhH4J/+/RSf1zJZM0Mq0qzTetH1DmTYQkkJJ1ptUjvxgu42xt9B7fPlgZkJoCELyL0Ah8YAIvrAfuX+9oKdQBZhVy/qr0j1Ko6g2r0UglS1/BO6kgdaXz45JzYbtfQWudt39BQsOWSXHwCeWq7arzC0NdYupBxmhz1NVIkBDJxE8mp56LtA0C62sivYRBkRab3n0LTCCnRSOE6WPEFI/0+ms1vCiulILlHjVzaVbiZhnbyWrqd2gEX4Mb8FGLbpcx8wLdc4eFOkZKvUGpx/00xFXK6UPZvNihANXv2kezJO3lgXFGCVB4zjgRDhu/+xkFeu8PP8kc469Ee27BXfrcPsKEG/XHPJwvSyUhEmVSq4hoqAb4zztaDsFnqQ1zOiuuJjNhR7PdGcAhqIVYfrKJNSqbFzYlz8zYp51bC7YSm7gXdiKfwjHHmJmxujUQGjni+m6AWyWz5UjLYp3+3iI2LoKYbq/hUfsLbGQ5VtJZSquPXdZVoV87J77GDaQVszzKO+6v3Nribt+8p/myhTvOklNgufofkeo4buPDMlxq2tvKAyWQ4vqtSstKGQth3F3Lf5ZCS4gcwhODDo/2555IpI1q3dXHeRDCBPOMlHplG+ofXHkpNdPDuUONh3wFRUMT9+C1l7bsXE9+kpyRNYScK0Kn9b22S/eRrwULKZAUzDIEMzfKKA85r9XCq/ATLM1zdNa9+ONT21z1yHkCOo4qpHfIS/9RsV2dNRRDx2gEirT6oGOkBlr9F8suT3o2Pw22AOxz0YWyEcjFvCzpgeh8dCjw9cCjWV9wk1VsBLsMGUd7O601fJarHC5pM1L7HxPAaRv0E6iMOdjGa4MxK4Ayp7Vn/eA2pJCuc+Db9NqQyML9hP4Q3YwWhjzgKs0YiHc07Hj0BIC+Oakbj70lEsmhRakl9PQgpbbeQ0I4RvneDNveTom3F6GVYpXvZ4ikLENodWE51H7D2m3A1Hv82ojUURVb8PdAN+JFX4mrM2+puFEh1nSDOypRra77+x1BRQ5Ni4WL3qwJXuQ9HPdNOeX6ErpaQ/eILGIPR812syrem+N0ZhUgLbyIEB6/K5Ey2QCD5lhVUu5+DAt+SoVVAMXqAVqwmabVOq1+d8ZALHzoWu/NU1f7Ltiie6/6JxKd47EMt2yfI6RNhR1UNQBQHskJETt66k46I2u0DZ3g78CCN/9QjVJLpz4+s+rflp+PRhdORJbtlWd/Baw9aS7kF9VhUnX86DrvW7TDstulRkJCTamU/dUq7SR10G/tNyHF+nAnvqPXMAx0kb3Qz4qQ13I4LBaNbIAnG2iV/1TtVVIIpEOurOnZNZ2q55H9ybwrAqtvC4BKnmrSMOnE+aWx/JyrktrIMkgXNChiF5JH7AAj9AIbz3K13FyV72hppbErX0/VRHY5qYEBD48y0CN0FMe1bTCGoaBNDSQFKenu3ex2aaJ5u1jL6vmhEMeToOaizxE5jFEWDhRhGsyViVwVgytEPxCotqmJt7XhVe0mPR3Kb9uQLnrO9ihYmYLexR9uXGw6JkixhE3kaEA0YTAWZCg3P5rIU3f3sJ7DdhX3l3WPmWzlfbtJr5i/bW1ndaS3XS7V1TnpaaJ0ndMvyaPS4sCjQCfPDWdhwtkvVuWZHTPnkS/aEKVAetTv8+JMbyU0LOb1ss4Eb9a6Yzjyt/DXBLyBXfpEjMnhGw7qRBf+m6YosI9ZGUFUupyCtoUOu2whkVL6L7g1YsDe/CG2XqQHyFnLbxdFB3pVVhRCbOP0OYcvSROV6KgFjz4XxtJJAyFwWMt9lyb/XOM3O3EnwtUlH3UmZ2EQ3X5/TidbJtzF1OzU0/pO33ZrcW92kXoNs2nXsmqzjqM/EDhQE3TMMLIWQAliqUSLJmOMWyB5LMnyjTl36gE6UUyuD+Cs/FDTm32cILJIeP5xJGMmPTUeqJyAQX4OstPDLFXR0ZBdG88ynuJUH2G2sQ+IZrRQmu992O5X/d6zaajvnrJlGUhmH2bJXVHcFttW9ywbIdgeo1fyE8x6JK3KAtBvlztIsZty5mpfMN3cdaZlhvdSwbv/BvMiYJQGB7dms5gcSG0DmdcU0sFZQUgJM/Nf8dYCu3dN9nrUYrLokIVTe+7AZkEMjd4YMHVUj1AAw4HPYsKtzk6qLPZmGM5neJYhQn5BmVw2gdxsZ8BMJJl/d6ftCTYFQCHKXduTWouU5x/cdijt5NlwUVYNPyXjbIsy8bTh4Y/OsRVoRi/bd0LFZT1V65dkjTPyucCLOt2LCdI/WfnyUIDsDSqF37u1ncMFZc2O4D56kgX+oAHAbp4Co7iSMBirfnYPzW3KsZ1rvxLbsh6GhlADbD8haFx6+upwhnDZyynJvphHIbLvTliovv3MEwF0KoSURdq7xcCgG8ACD/2sKY0UM8qbtJx9kd3n6QeLNzQ/gfN0ADomtPXOhXSTsgaU2FYRVNwWrX32nA7wvirYqmIpVr0uYgyHLUtC+LTUGn8FTJL575Qv6UCVJM9IDEP105dJgmLfUrZL/cqLfeQAB6mzLUZsLVzKRA1t146Keco0a4p9lCbfiARYaPpNbQlmTNYiRJqXJAjFIrAwe8nuLSNuFgwVvi89Fykjp5IrD+NqlcW2f3unwew6Njx4CR0kmswtEhMFGjCxHBd1ueuK6gGhQag4EHCD1zXcwVJtL/+MbS6tKZisQl1ZoZRlIlVD5Oiu7LoD7Sz22fk5IFtAI4RnsalApPzXwBoqR1Cet06nxNiV9NxSagcLl3BfDOGBAp4vF0SeNeCWJLEs4fsXZU4QWTxh5r+oe1JN/li6lcgWr3P9MkPDWjAES770sxjqM7r1CP3kzBRSYCh+ZsEMhd5lSrwwWV4y8NgJHgsylA1xzd0OEr6172M81Wh0/Jihds+vWjE9qyZJ2qFW7ITErXrDAqVxinDCWJEQ1aNuY926ixnIfAL1ueG5CnNKCYJ0nQm+XWMo5HwJCdHaR0v6fyxIV1gIbdxhWKvjj2dKlnkAsWQimBjhifd3riIK8v5D2ScqQ8GX0ispTknhnBZZNTcMqJLQgWSlXpJW1k8E8HlHlSu76IO6AUnSDSR6DzEAmynT27n0rGR5Mca1YdrAhqgXXx6hacgQr6RiUB3Qzs3E86nTnr62RfeQ12c7l312o71Mi24l/s3VTm7ZyhQotQ7+oUEY3BGs1UF9fmkuzq4pKw92WmWiM715GamFRj1St6CCRHOEl7yYsqDSDDpVp2npXGGtpR7c9CU8OugTWQc0ABRAlhctCFp4jXzTWS5QV7jlz0nyfJw1eaHJHdQC7UFDM4w4xYqI7Op4malXB/Mt8mdukoAKSe+NpA6CVeEwGpgM9FplIIxKFlOYu2ztbjeffCb0+U3WHeOV9zzcvBlA08Cpm92Cl/yLWZnT1q8f61VMmVRjTdJdmVVonICAdG1FfcV7YyxeSKxNYmVCOgF0KT7cerQNlCq0wM4X03H+65GSWx0jbdEvJbSQp34EuN0uU33yK3BNbQHXrFYCVdt4gsoX8B+zP7KBMW3gpmGkN4pCistDcCslvWqADwdToj00qgYfznxG61LTuv9dG6/4ld/cu5aGJvbAjzB7Opu7r0WxXU3mSfwXdX5Q/qvNJ3kDQ0P7lr72lD3JVQ8PBwWLmELb7706hXbTl0dPeATOeS5jzOZw6Rd0XObHLwkRSuAEQCd6OShun4bU5aEegKD/tU4dMkhxGnaJ4Tc/Y/KZV3xXLVGICO71LYv1gHEOgNWRVUPjl5CdztiGCziR6mn4buvZQYqvu01d1eT4dGtLo/ifQBC+kTgCQ8W8QsTEOwcu4maKHr8nULPigN4HiYiXalXMlwslzNbudofeKR7nZPRCWqrOYUg7C1GS4ZDp+USC599dZ3jkIrpbxdVA4dIaZicj8PpiYEtMs2ueYArU+/BlJ2+F/9DxM0VL8FWNL+WGqsVB6SZE+A7dGdfjSKx5HrGafFS2HbUArYWziL49BsdAZ15aDZoJHDegG0YqNs8NIzcKaIb6R96i2Z81iW1laE5a7i2wRFABFNt6c+86S98B/J/lBHAlgKiB4iOB+cqRGA/Q8ZlE25wTUnWbgvM59fIZnkbYXF9vEjiP/IImQ6v7v4FiR1Q1WqCynxABhZsVDDEUcIk3Rsj78CMlKUsu46wRLGY8GT93Y/l2HqwfwEZe1CgGZhYSy0q4AIYbm8Dm8mgUODHvGYfhhf9oLATNpMpPuenFtT1dF/v50A3cSDWxXJ2EIIgE8k1w+YlokCIuf6LbkCb+xRt2SxYlhpMyXj3OqdlXGHMQgEEdprij/IDau/w17zpET57o1mASfpObizdXhKS/fNhNjUjeh4mziAZ10uM3Gr4v64RI29NiSMLmauSHzw3PZCkH6aT3t7UEFlSa5woC+sMLG1rFZQKeqR20y69Iu2igYD8PTaipE4PpCGLSGMKy7Q7f/N6W+ySDsiV4QhtTcs+MjXk9s59giqa3HmCeEbKIPlaPhyzGc1iAGlOukPrEha0odDeqRYtrksIeYCoUB3RNi3vyf+JfKV1UIMAk+P/hgeAOLs4Dvra8sJD8W3gApD11W3aydn70jb0tjsPNYxhebPELps1qQk7gD/bPjvdlKlYj9HOWJuIRsEcVe5mjwBBH2NRmUb76MBrKX/ArF/J2YteFkim4xKERx/R5784/3QYuGtjBzMhpM0i+v+mhUHB0vIULer1SkgHrB1zDUD0ExR3LF1tbI3gFkldn+dBuSRPuLC/ubPe4t9JCA32V3hoGw444Zinh2ZDQB1/DulGXUp/yqYM1pBOwLOs+HaliGal0UxeNz++08oolx/FnjFxSqwd7U3qWjhUJyTymE5brrBDwc1lYNmcui7c07OtMTv4yg/G/DlvwV6qAQjG7Qe2YfpAsYEibWvlRGYykfx+O5ethqw8y3rmmv4rOPDPxct4Thmi+qg/BAYX0tOVOJoCd9ArrNLtGeH/bcFFS0EeOJ3qVKsF6mXy2BV4FAIs23UOO+cmTBrRogo2r5xT48NoezU2dAr4tKcD34DmKwG+dF9wePQ36jGKmiNNGrJBHvW9t93gqSpbueaoyGNE6Izii6lAPhnrcDFVteb4pKKmwMc6ySkNZuHbbnKXttvP01wgGbLdusRKLDiRCIqwozwInbZ0kAt1rUk0A3L2EQPL7lqK24sAlvi5TTPNiSgkfxePkrwDCVcSkvCSwgMy8xhfnT5r7Us+TS4dV24KQ8VS+LNkgD4qcWfN+Ghat9UeJIasyJW+/jzxm7ZBPEwZHRpUAXzPT+B544/LklO0GD7FpuXGrKD5BxI8eaGRrngLv6IcatxcnvcSmBAmSXKcofCPx37RXKwE0a9t35MG1M4fD5qUGN4q8JPH9N5yG9eALS7EgdWR4VXI2fuCYtsE6FHyWsFKh1To19IofuGJtc9BU3EeMGRwwC+Arh9gVw48m8QsZ3gqmIAegZQrMSmAjxGk6gJYUiS0pzbMphUlG440OooqJtRX3EtAuDODnBxSxnih9mUatkY22jC1EXcZf4pXz5V/syHk8RV+Wek3fl5hlxbnKAwTx1AoHmPdZnE8p5unhZQiLeklHVe6svw0i/fLkxp7VhG8TfOBawuWsj3K/7WfzwydN9F4kwEwJ/5lKocIHHjg2NVwKgVnFmZ5HMZIz5qO6KS1aLOPU/yJ/zEIRoUuOIgTLhXsdZscVZh3Hf03lRjzgOnYMO9fG5hEO+a+wZ2mFqXVwMuu6J2orOsxvbILvMgi27Qboubg/aHT8fmF35fRk3NTjYeP4S2V8+7D7AIus7Qdui/4cdSsn7Cl0P+Hw0k6ZpyNnn69YhltdebxwxxeawamLLGuG1aNIZgLBiukePed9ZpGNMUe52CacfNQ6q2RJ390g9ZGXIBwbD6Mqa5gcaxhlWb+tKCLLhKfGGiN7ScNIYvnz+1DWIhW5YBGKN4PKaCIzMqvVeH+0bVQj517JEhBoe9Po9fp//wJ41qefAN/NFpuJuBfi2S54hIF10DuWE8A3qgTK/G8oZ0cTx6gsyjYVTsei1BztwKAUVn4J7t/WBPY9bzgqlnrBLW5R1FfIpK92v4JSkd9C5XuOJqAS7BpYS6aWrVlIqls/Rn2PJbDkz8AY/K/9QyVyLXg01IjdQZQb7e8YX8SSGNU0/p/c8M6WJSCI2HO4rDd29mYzomvEv/sBaGxn1FHrb46/Anshu+ukaf3BATavKopko/bze46YARLJT3hbsf23e7M9ENrMw6WMZa3LLb8ynNM2SYIQ4YP1EMMeUVX4TB7rEXfTdFZFpLgDO57xSmrv4w/f8EqwcAaXklVIpgOJuWYTvumZtkh18SMiI8a/My6n10E7j8xMuRJVcbylJzaoZxo134XpyxJRqGvUVYtdKIvZeyIIksba+E/UQBSPP1oGSmdWTaWv2oyCWLEoHJGqDiScZzA8llsjdne7wFKVqRZ91+c5lWycr1WkhK6vxPe+35EahY6LswjeyeGf+mH4nFc7vTpuMVYm4P0+XFqOXTPVE3Ycz59yQRJRySnHrt8mNNLKXW8/1q5C20WvXvBcFUtdcL7KIzdgTN1QhsIdH5C3+F2g4/f/iEjnqAU17yTur5/ZGSE8iBiv9aNK7UgMW3j8q2a35D2IXnno2YifCd8gkd2XJb52BceJklgtlU30dF1+ZeCNMIjvfXgD9HJIzcs9L0Fu7QHXfEMJGAuATOQB6LcRkHDpy9go5Gw4kJK5/a6So1IBpMK5TnNd6nxfwheN+6zS55qeLYXiloTlPrOrUJorC6oRKgTton5WF3vI3ogMr0QZEuBoUFfcoTqS17q8UguQfhaf2Ja8mpXopUP6O3hM1F4UosYpSDACHAv/PEYrpApQe8orgXPHt4ei+tpzbMbpUFS0Ik4ah0gJMf2TvI5LfNGKSLy+uQ+oKAFIZRGhvYFJWHvDE+xDTN1d6Xaz6bprKEINWrnJ2+T6CUbjUWyq2uixJIhTyR2AwplSSKoGEPLz5yROZzOxzCz2Er4z4y50Jlla48Ti5H7XEn8nl1KZWlR90mzVAuLHTXbL5V9/7Zq8XqAjRARw46VlhMuiLpfWzgZYM61Gm1XLloeGWc78o/wft1/BkyzSvlbAS8SAqwrdNac+bxg6DnBAoJ2lr3GX1emjN0FQGmj5JaH9pKBgsvApkqmgrUBtYtf3JHMH+3QTSY3j7T3y2OTWUxAUm/LYZAkuneomR/6ahu7N0mihAPg0ZQnPhzPgNkMPtw563PBNtgMlHBdb++2kxPYp/wwI4CNIhF6DB+DjxW2Q0vmPsDs2HzF2bBr1IkA5hDVYlpIVv5BProPaKzuAQj1rVgKZAdb0aXHt9TCildGRex14MkxU2a6fAoYZw5YowXQErRsQGcTT0xwOBNlsfkQkhBkVjR8iwgm+Y/mrjULO19N+jv4+Pou4F10JiU8aZqfy66vyAHHuem20A+tzkDxrVRdWtAzGTY/4J95cj92hfqq3zRQpP+c+bazHxNCNus1lETMelHEvvJnLcsu5NUed0H61a5q9mq6ybFlc+s5LXccTYWaWMkxiaPJzUUtiAYdGHuQ7CcxN1oFb7eyQV4fVlDAFLSmnY68Km/QLTnHd/ZN5u8tE8P5Ub/Dt7+dWH/fQyfVhBgZJeHBo2MPCxg2AaI/DUAaGCBpKGdknsQH4Ujq42gdeDF/lRRxW/CRtnAFGIF8TXUyg3oqzNbpm6nMpfQcVhuaW4n5fMY2jAn8XBFaKXsIgqXDN/a96cKV5JORkQfcd5uq+W+peBPv862yGh6toxP5ziolFgcdXI/4e5IEA3n5tS13ENinSUhiDK+y/Rgw+oAzDrwfuXfzsJH3IriXaxrpO4KGxWYWOhDAmYr+rDUiaIG23rE3P4Bi5Y+IfcH7tEI9+Xfy2SG/P0IS5EQAguaKCqjuH3zPBMdL2x4d3l9AMtxgMiT+uHcFBqV6JhrgGqRXwsvsrolXnQfxGyIAT64IjDX92MFOumx8RDGKsz5LY2FDuwN048ZuwLKpU6QLbU+XAerFnWbwSpUuVbpiC64U/vwg+ZcZyZpg20o7ABqS/lRH2ihimskzrlvqGOSEWSWfKbLK78EI3WkdDdtOQ+7A9bYEWHxexzNokUyCiG4FlN3OFfN7OHQhU7T1txGfdFsVuAXwO69bP/ThrLxT1gnqTHyp6BWxxeAhLCLh9G/7T4UceisMKAlLvFasznAxDeSGd62aCXxo/EDGJyEiLgQuHiuWFSvHiS6nTTCxdnX0w2Mtapuv7UohQbAtJ5qSF54W+aQw5ysI2ZymwBGT6SkgaTm4A1QqkVkwfn1hjEz1JXk622KS7j7LcrqE2oRVqMmdrwM/u5THg1Z6DWfhRXzWi9DB9VDWCGhFyxfT4yRkyVfpuDf2qb8f86EDZnpYwXV76QMChTAiNf8xt2VdCuVyz3ADnV+CeahQhETa4GtbmdHrf+uhZ7e/zHgf/gp7lnPTcRJzN6xiFsSZNDUncnIQmNvXRsqVYBf5e2gjU3ox7JArAxWFzjbgjfNnWhSNpNQTA2UQxQXwrHjeX4vvcSDITesGd1dXQ8ptAXJWFFms3ne5tR0dz+MWpH3ViD5PSfvGqWh+oENoi+c7XEiEENpIj4mJZMD5irSF2WptbCtDMsBoOxJG7tuh6EL7OCVBThcOXTSrX/fMOB66ockN1vjajBTEPRhwPSlzfYuYnKB/aNbg58mfZfy9k9vxw8dPNXxWQ9T3sUOK27sApnz3n6rt//QwOVn53q26bvS4frjdzP0hY92EmlX8VouXn72ossmterOZjDr7jRCWrvWACn19KnhPNnuUOcRhZTDBjvMCX3ANe32mc3y6gvHVyFZ7WSDeUmT3QUEPQkOOrSpNdwE5oSqkU76vyWvQpxTNxYGYtBo5D4y46mrGwICIto8PbLlHeDCcgot9BJot3ydBJusRTIflyTZMmlP7MDoVERDifzcIAqUfz4ljjLfVdtcX0aMTfCWvG13Z7dMtDCvZqZx2WjtcqpcEPcuDUSh+1qfZG7dPnuY2R4KXtFe/Tyj7dEKeoPTwrhg++0+1xokfgqufqSZXUu6YXgiaKYEmHKWLmGLT0Si50s0yhSfZ0Agp0jdPA060weeXfdHo7ei/DCHTqxHO9dj8FCEiYGAFGuBus6vy4WG49FmT8di8fEK9X47lYQzfZ6FJqXBYmd9XtBGb90WzXZbS4nwH5rHkLjq33BtALh/HJAK1Q2qJHzL30hX2HAinxdueIurIzUop6JkUlQ9VAs81dKCBcSaSxMlvuLrdaCOnwiCnnN5iLJEeZpxKtkaXQuO8cf5NnwhEdQkmyjm//PUDwSiQLqfitVdDlTdWDo7YZEOdpuOh9yB4wWdWjCF0OdZU1jdAbXvwjuUmz4GlEFO88fmyRaGPpDhKcH5uU6q7qwpejEJ4GhwQwNiC/8HoUJiC2vD92hEHFtJdr/u67rmLF+wiP1gaTpfViMPxU0QPOsvOFXcmLKzZOjd5RdmnDQIhpWDxwtg3MPt/yM2D2PzmNbEn5zqTFp7btDw+90kJPnFE7eiProNL7zgmYSvy0eH/dYoQlsI+dmzOeBGUPrE3f2RR9cwMV6BFxQbnF15Zp/UwIgQE7T3p0aDro2DvlN39pZVOgyx0zlsyxuL36GJGkAhKaGCCGtfXDiiWFypzv7gXaqAGAYckDpQh/cBxtaDKV/hoKaguo3SdysVVAVV0YAeSLuBSe9ChtT0ZV1UpTI84aXKFe6tLE1IlTHdDlrw9bXfAr2LOytsBnlESgcZtAvceCNRW/zAI1ccWRbpiQnkAkQsmMVFiRZ37LYzP6BNjk19t3NQPDS3H+NXnPfODkUJ3GDHYjqX2R19X5RtPkZMSYMpsqTlOF75/wA6JiwBGAs95mEnsxBjnE6fTl0+CQ9KE0pPlAbtyvumy7aLqSarHN2hFSmWOtBjqe5Z7e/JYdG9YvQFei8Wf62Te4fViTAAq6+oQC1azXLyecvyApMv3oeC3RQSYH+m/HugH67wtvF5Yk6CE07AqfNlg4yWGD8kQNwMXJajpWm+zq1mPZSkntUPoGL7wF85sHAghoZGHindbDsrBEtg2X33hcwBe60FpEPIwIFlhw+ZL6WNfu2y0Fa8GAEY8XbvXDE1JQlL2jKWWQk+A9JXSJP6YIzyp9vg9eMSFcfTJvu+ALFxJnKpcqMhA/snEF1AFb5TqZ/gQ8GWaAbx3u9KJZW854VFnN9jdwvd9LgTDQ9G/XzYxaTqagtbXgoqwtRsa+vOxtxsY7RLeVEbjTk/4noxzyjLTkAMkYfj9sGznoX0f0NTOwTN23+q3imtMqBlTXBKQ8YfIM6zMKPwGQwf+scdT2BzwSLHZtrFmtqzgq0f2DqW4PHSmP9jC+jRIYopnf3qzSnvUQffUPtK626iMDEpcbPmKHnK5aRcYfUW+5lDiNf5uZBIifq2HjHw+p/+UdF/y3MU0KFQTn/khRvfJEBsCDekIYtStARzYuPPOHq/eMkQbZQmuZE++SfzyA7gOaTeZH8UM+Ajqq21vth6Ma1GlA7VMJS9tj6B9Oo3ufGv4Yq2ozRjIfdzIF5nFKIGg/XgEAmeVWcVp7YE85UrV0Z0hmLrU+95wbyfYw6z/zGG6JX8GGEZ6GrndAzwaXlMbtm28yc/ZwQoSMJTSp5G7n/vB6lIxGjTQGqjUjpSv/HAX1lQRgKn/Xwv39cfFJkaYP+W7oxKGWDpH96jxtjIfiTNj+3KteRKxabPafwFQkJB+UA4lbW5WXgI/UnV9FcANoeV3QLP6FNYNIK8h5hkf2LFdKXfzURCUXH9ERTjxUQhBAAuFxgcIn7JigebCOOtAcDc7dN5EVSg0YCKBPGip5N7mNBbZgu0zZXXUweJ3xFR9RJ3svI7r77TH+8mmkOetjk7DnTcY4bHzV85UFiJUt75ke6PFvKRMty+q6es2GNyjlL1AovM3h9Kircp3OE7bUihGl1avhnxKM+HiYUia5934S8M5UPQi/G+fRhgUiub6ZzBKUhOhO3EavNqF6NFZOEwR00IptPc80i74hqCfXpBdUr/1AX/VHJc1Mto7tcrsTFuthO1YNp71DGv5vIMxZj1qiFCqYSpkGPa4A1rFQ6JGmMybMRjDALx2F7TiZE84N61WEBMhbMBmZCMPimT8ZdKb/QQEPCPE4OTtuQz9foZ38cRje6EdYXGZ/ega2fy+Q4r15L5dBT1oejvetoMKGNY37/FLAc/HMnJ+onJ84llFSDuheQsZ+WW1ji3rEBCy1AfnnWleIYutX+rBSvMpD5cBWnw4Mq4iXzqV9B8XdlF6LaxfiCy/+vGrrlXu5LbCpUIcUrCg9yMeY8x7jlgGH7y3fHY/oBjM70sDl6M1KQjFwQOFH78GAkLF0iQRtw/xH4uCNkutBky1xMhOM0gnR3/QE2ucv2BKiwEaCG8jUIgKKED7eQFzO/qyRuvJwu39LMc5tbRpfvLwa9Zxab1rPofK/vG3/GnTT/2I1tvHl4ajnXjJ5sKisQ63q/rOvbMYpSwYNodqvvAj0Yg7LCj3cwrnWTJvQZuQX/LiWMVkCqyjeth4Gsb1kaVrlgh2JjNQLy0ChNAmXm0hgEXst0YZ8lPfkno7JejO+X2TnkKXDNAdWQkUIBWtmOlT4ChUJ1Jkc5MrCvaicmFDlyHup+rDQN4YMMmsqyhpgHKG27pbFHwcfm9ML8LMVxYfqdOUwn8F7qYUkzo6+kr1OeBGheJ8UAYPESrsEf4Z2zKH/VHG1iVr7GMpUcnR/EmtPL3e8jJWPE3GFthvbIWaGjJxHTpG1wYP2HYbi+wWag2QMFL2HhlOqG0CHlLKNSJuq9cKdjWwOaaR1GL9Qnz9ePZ1HjGJRRNoHQ2VV0l9GVSMtSpWNesvDCUlN6EboN2dUdIF2GEcbtEQCc69mscHFfISIxYKWXTzqkIIzjzrCuolhwpALmGez2YdUfIwrjIIx9pNlybK1LoojLMkzt5OefnFvnmOPx8t9XZ6c28fsUS/MACIs9FMSQDl0vO1VazRJsz1Blei12qlGkPJkG0JAYTO7G4sk6NISaqSCm/2Vjsmqp6Muoaxam+ihoL/fYyq9b4Ae7MpXqTvNK8vTWCoGehL7LmJwKaP4zvnNonGUHbKqCcHJ0SPG1k33azTeLASzdi/IoO7h2liKQKUaZrbIpaRygDqI88N1O8dch1fU9Xb9rh52JeX7RJ7+cTKgSnrN0aixWR/PJy5iIygYB2+e9a+qOwl6P2SqInjg9wwn7qlYih5vsxJLMeEYSf87QwhlncjZ4lLdByzguu1NDzofaBhNcbCR4jGKVvbshNZbLoJOE/0GhYSanYFH2eGrOdnlaK1hpbuEQ8paakyvNdW8cWn849WnC7Uew+UIqKyvhrGelhEfa7UdPHzUJkgqcYznzofJ+SSVZd9AKLEBB15a+gqKyUvmprX6kZFqTAeEHeOAZTa/OCePoWweCCOF07AoUpWKK0ZW1HFKhKMLnC2rujjuux+dcyQONeseh/6zT56VdSjETZ2MPPAbbTFvzaXaMNR/JgguLX8wzWSCz8nP8cD0E6wOeAiagdn+HJngGgjYP88LESRkPE4JFw3jxAxQX6Zwa6alt/ttxqQz3cZ1+VYnkeZ54Q6dm3rk/JR+LFpUr/ZMqFVc87aKZtCRTNAm7p3oYzyWKAs+lh+FOdanu0gJgCfGEFfuoBmEV0B7Tduc+KV3gRubXTVletdfePm241zSQXeBpIJGp6gzhVf+1wVqZZTHJ6JF0lHDzn2OeFgzPPnGDTGSO8PatnUcTxLc0l3JK9dF/LsL1gqnnD6BboL/FQwvtyHawqw65cgoREB9FSnBYGkt6FyngoZdErR3PaNqOMhHZEwb7JLFzVaXOCvA0948CnztJHkjslCUln041XrHqQ22XBuLj3UJEj1vailscg9R9xGOaMgcUgQERMzyWCGsVGmRw/dRX09dHCR86we0pTa5TI4JwCF5Nfae2HnD/xvbVviwUwFpOZRXj+g5ndJPaGjI4DjQk9CERgWJmL0T0RmL6RuVapKWTjhxIqWn5BVgA/E7SqyvmzWR7/XMbRwW74NbQD/KNeLHFLB/CuXcWpkRITLfACxARkB2d7mMfnY0whk3Kz7Q/a1QLvRvjCuW8Jq+0/j+nte2SFcoqv9kMuDBoQMIeum6iwKUmqtrx5lsReELrEHMUH7R04denhIca5QkNhAYP9gCXc/J3waApp6AIipCwaCswrf/cmGbjQkpmkD5W7VzNayrVMeyeulf4TJHawB+uba4PLvewkrPyAtcAz3qwcKTGGjliOCRslJiWkXwqSnE1clWPWUSogqNRH2030tRruwU0g3nCcN7GRNQj/xcm1abv9WTLx/KswOd0EB5mWM5fLHry24Ird2q8/41bam/Ca95saLzrWQ4ru041nuDwO2tQxtmll+GFYFMD0gtAtEd3O4URPYv5ncZYj4AmjaErhpFx4tvzp/rH/xyjGgzTU6icER/jZKyeNWxNWITqyue1U9HQW6zFEzZdg3vP6ZXyyYsJCSKXlQ8VFKuFCeyt4JgKnTP4Q/MB7sb/VssV+XrBK6hn/CbvoEwNrSJ2Lr1nGG0byvcLa30wwtb7Ci7IMCNHmF5LrrAkYBdPaImP77XP7eu1nSsgU7FJQBI1cx7ds0+L6VZvqMjlisq8dYZUEsYZ4uMXfC314+MOUzFeLSE+1MAktn7TzdRVDJiv++0c9ngd8e3VX/eE+9Gt0Nn/aH0W6vwPbqb8uKYLjHwnHqS0LhMbYWspjTX4zsvao5TLW/KQuPnfVKFZ8eLGbhtdSjBGopfDmCf8ZzrCajVbsyWdQhyxmGN5AyWD8xEKdKfaSGaVsZKFs1Kfbm04aZQnIB+/yHeLasp0kwg5BkZOcvVIWmrSa6L/wuOahOS830VvNdxDHRrZpDKnMpJBHtrK4P+7NUpy6ctAtsLCh/gT1Tfdu5UdYo3ecV3AtF17/W8iACwf1EbzG14NtIaHjSfJq/gzeA8j7uvjc7dz94C6QuocrYilgIrncNQ3zq9KxwjvTODwJQz0I9wtJHIcwoTW/9UmcgAgVSMyBfmTzsYrUtzSQpvi+4rNOy15xkW+YeXnnNrGlwXF0C5fiu7TxSFkorZVxAl4goF2nM8HGt42yxi7nqgP6xPstgXI3EUwAdkv981DP2i4c0M/6zrw+/GW+knAJsOaXor/QwSkjTLYfeNENqsGrrcCJILvvLSH/gswwoXMF7vJNGgV1+xeK98XlZky5hf72oG/oBlwzCZES829S9f/i+z16I+t8fwL9FFE8FmRjKhsAy7ktFG6J9dgoX7ZkHqkbzspV/XzCbsS0rikDWdMijY3q2PRD7iIAiy+/BcNfrfJ6xtyPn73+dNwQ7iivOt/RAm8Vt7X7DruvlYRIHUwBla83SakCv2ToARsCvbg2C0YfSs8u0PXvzVWEn3LwTUB3TiHYUHCE7aXXbcORyAo2g8F8CAQmD2mi7ubqLE/XzLZic9bq4l+HQJWQSECxRlSQwy+tH35ErHS9yZN2enb0wMNs3b4EVd/qZn6mwLIJ6CVKhcRAAMhVjVHANIbhmDW82z+eGDZEVlM+5W1x0CR9SmvaalTHgjsmV1NYIiv717WUoefawq9ZZf7krL2Gh9dCjMIIXDh/lf1FV0+nordOhNQBd4ZQTJnil2JL8y0VN8wwilTInS9StW3ITqPd/Ep/3l9ypSoIYDslCuP3S8/huLQepwfcWMj5ESy2GeeGQ8Yb6+uxfxQPWbTTfhbXUyrOi8whT5RVzvL2yW8aFu2dcUIx+73qxDgbkMrnfoSAvJgfyNkqgm3avek+JijBSmb2OSScb2hNuVmxmW5tBFHnfpwKTzoK8b32l6FlAV+FC1xIaxODzF4/11iRT43fRW8vzwAMGtkudGA0tAA68bzaI1ohoHhKYUwPz7j6ulqNILrAjxGCX4KfVIkHUopkaVJwuiuSsnVon5VoFHUC0KP0OODgIF8pDL2kJl5LGuK8sqy1O9FiVOyplX6e2eb/YW+oYSqtd0KmQeFo3Q+US9NED5PJMjh5ieRsGf1ee/nG6ISvGIeZSaGUlpPLHf8aQuLuS6+z/KMMm6Bn3u937CUmomsOSkc4LpOSvR85usoYdLCv+GFASP6/odZwAtvhR9qS5wZy86AAGz7rB+I4nsUNtJ7+SCngfTFUItMpJxR/sb2L703FSNZggQ3gi+OQB+pSUuMReIiA1rVSaFqxUd6hkDZXDySxF6gLTXG080qvkOc+kH6cBptIst4jYdwBMvfTxFbPrcv6GIiUY+vtATGlST5ihMj3cocQGgremWGCSOMaYu4c8E0ZbW5Hgx93P9t6vQ4exnwoTXscqdb5WwOaoFrdDrYO78v1USYOnlEcF/tvpdKFLzlVV5hGKWOrH/nyOrxa4dWWPrzICm7CqC/JStMfk11/BsdpOND6HHMBGqojB0yz+DFEz4MuqoT2YxvrRt6vAZXkLVuo19xEwNOegk+YWwwt2dTE8sH/TqL46lFJNKUV32dG0Hi61tc2PdYazlwGUGFkgMsrpU2R4n6c6Gl5d1yX5TY0EHt687RSiMaTPa77oDJKThajKbkCjRxTjRpeQsPYvV7SbRVDRWAoXMNh3fOrZYYioSLR/bpyg0Lj2Wyvt9SXrXTXmcp3dNnqLAF18x6OaWREQAAAADQdXOh0ohv4HckH4xI0oeOfMGF51+X2D1mdVwmI86504GiAQRDulyJTMkzRGkaNAiFcITpnunjfQfgDOc3PwtNzpGdwF2H8DYQRwAAAAAAA=="
+    }
+  };
+
+  const FONTS = {
+    sans: '"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","YuGothic",sans-serif',
+    serif: '"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","YuMincho","HiraMinProN-W6",serif',
+    display: 'Cinzel,"Noto Serif JP","Times New Roman",serif',
+    italic: '"Playfair Display","Cormorant Garamond","Noto Serif JP",serif'
+  };
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+  const css = (rgb, a) => a == null ? ("rgb("+rgb[0]+","+rgb[1]+","+rgb[2]+")") : ("rgba("+rgb[0]+","+rgb[1]+","+rgb[2]+","+a+")");
+  function easeInOutCubic(t) {
+    t = clamp(t, 0, 1);
+    return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  }
+  function easeOutBack(t, s) {
+    t = clamp(t, 0, 1); s = s == null ? 1.15 : s;
+    return 1 + (s+1)*Math.pow(t-1,3) + s*Math.pow(t-1,2);
+  }
+  function hexToRgb(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return [255,90,150];
+    const n = parseInt(m[1], 16);
+    return [(n>>16)&255, (n>>8)&255, n&255];
+  }
+  function luma(c) { return 0.299*c[0]+0.587*c[1]+0.114*c[2]; }
+  function mix(a,b,t){ return [lerp(a[0],b[0],t)|0, lerp(a[1],b[1],t)|0, lerp(a[2],b[2],t)|0]; }
+  function seedRng(seed) {
+    let s = seed >>> 0 || 1;
+    return function () {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function deriveCustom(c1, c2) {
+    const accent = hexToRgb(c1), bg = hexToRgb(c2);
+    const light = luma(bg) > 150;
+    const ink = light ? mix(accent, [20,20,30], 0.35) : [255,240,246];
+    return {
+      light,
+      bgTop: mix(bg, [255,255,255], light ? 0.08 : 0.04),
+      bgBottom: mix(bg, [0,0,0], light ? 0.08 : 0.25),
+      glowA: mix(accent, bg, 0.55),
+      glowB: accent,
+      glowC: mix(bg, accent, 0.3),
+      accent, accentDark: mix(accent, [0,0,0], 0.35), accentLight: mix(accent, [255,255,255], 0.4),
+      gold: [232,196,96], goldDark: [176,130,40],
+      header: light ? [255,255,255,210] : [255,232,240,210],
+      subheader: light ? ink : [255,230,240],
+      pill: light ? [255,255,255,220] : [20,8,12,230],
+      pillBorder: [accent[0], accent[1], accent[2], 160],
+      vertical: light ? [255,255,255,210] : [255,200,220,200],
+      cellBorder: light ? [255,255,255] : mix(accent, [255,255,255], 0.8),
+      labelBg: [255,248,250], labelFg: light ? ink : mix(accent, [80,0,30], 0.4),
+      emptyTop: mix(accent, bg, 0.25), emptyBottom: mix(accent, [0,0,0], 0.55),
+      emptyText: [255,245,250],
+      bannerBg: [Math.max(0,bg[0]*0.3)|0, Math.max(0,bg[1]*0.2)|0, Math.max(0,bg[2]*0.2)|0, 250],
+      bannerTitle: [255,228,200], bannerName: [255,255,255],
+      sparkle: mix(accent, [255,255,255], 0.7)
+    };
+  }
+  function roundedRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+  function fillRound(ctx, x, y, w, h, r, fill) {
+    ctx.fillStyle = fill;
+    roundedRect(ctx, x, y, w, h, r);
+    ctx.fill();
+  }
+  function trackText(ctx, text, x, y, tracking, align) {
+    align = align || "left";
+    const widths = [];
+    let total = 0;
+    for (const ch of text) {
+      const w = ctx.measureText(ch).width;
+      widths.push(w); total += w;
+    }
+    if (text.length > 1) total += tracking * (text.length - 1);
+    let cx = x;
+    if (align === "center") cx = x - total / 2;
+    if (align === "right") cx = x - total;
+    for (let i = 0; i < text.length; i++) {
+      ctx.fillText(text[i], cx, y);
+      cx += widths[i] + tracking;
+    }
+    return total;
+  }
+  function drawCover(ctx, img, x, y, w, h, ox, oy) {
+    if (!img) return;
+    ox = ox == null ? 0.5 : ox;
+    oy = oy == null ? 0.5 : oy;
+    const scale = Math.max(w / img.width, h / img.height);
+    const dw = img.width * scale, dh = img.height * scale;
+    let dx = x + w/2 - ox * dw;
+    let dy = y + h/2 - oy * dh;
+    dx = clamp(dx, x + w - dw, x);
+    dy = clamp(dy, y + h - dh, y);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+  function drawCoverClipped(ctx, img, x, y, w, h, r, ox, oy, border, borderColor) {
+    ctx.save();
+    if (border) {
+      fillRound(ctx, x, y, w, h, r, borderColor || "#fff");
+      const b = border;
+      roundedRect(ctx, x+b, y+b, w-2*b, h-2*b, Math.max(1, r-b));
+      ctx.clip();
+      drawCover(ctx, img, x+b, y+b, w-2*b, h-2*b, ox, oy);
+    } else {
+      roundedRect(ctx, x, y, w, h, r);
+      ctx.clip();
+      drawCover(ctx, img, x, y, w, h, ox, oy);
+    }
+    ctx.restore();
+  }
+  function verticalGradient(ctx, x, y, w, h, c1, c2) {
+    const g = ctx.createLinearGradient(0, y, 0, y+h);
+    g.addColorStop(0, css(c1));
+    g.addColorStop(1, css(c2));
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+  }
+  function radial(ctx, cx, cy, r, color, a) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, css(color, a));
+    g.addColorStop(1, css(color, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(cx-r, cy-r, r*2, r*2);
+  }
+  function drawCrown(ctx, cx, cy, w, h, gold, stroke) {
+    ctx.save();
+    ctx.fillStyle = css(gold);
+    ctx.strokeStyle = css(stroke);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - w*0.50, cy + h*0.48);
+    ctx.lineTo(cx - w*0.50, cy + h*0.28);
+    ctx.lineTo(cx - w*0.48, cy - h*0.05);
+    ctx.lineTo(cx - w*0.25, cy + h*0.18);
+    ctx.lineTo(cx, cy - h*0.50);
+    ctx.lineTo(cx + w*0.25, cy + h*0.18);
+    ctx.lineTo(cx + w*0.48, cy - h*0.05);
+    ctx.lineTo(cx + w*0.50, cy + h*0.28);
+    ctx.lineTo(cx + w*0.50, cy + h*0.48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff6d0";
+    ctx.beginPath();
+    ctx.arc(cx, cy - h*0.50, Math.max(2, h*0.12), 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = css(mix(gold, [255,255,220], 0.35));
+    ctx.fillRect(cx - w*0.48, cy + h*0.22, w*0.96, h*0.14);
+    ctx.restore();
+  }
+  function drawHalo(ctx, cx, cy, w, h, gold) {
+    ctx.save();
+    ctx.strokeStyle = css(mix(gold, [255,255,220], 0.25));
+    ctx.lineWidth = Math.max(2.2, h * 0.11);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - h * 0.78, w * 0.30, h * 0.18, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,240,0.75)";
+    ctx.lineWidth = Math.max(1, h * 0.05);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawWings(ctx, cx, cy, w, h, gold) {
+    function wing(side) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(side, 1);
+      ctx.shadowColor = "rgba(70, 90, 140, 0.28)";
+      ctx.shadowBlur = Math.max(4, h * 0.12);
+      ctx.shadowOffsetY = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.08, h * 0.20);
+      ctx.quadraticCurveTo(w * 0.28, -h * 0.95, w * 0.98, -h * 0.42);
+      ctx.quadraticCurveTo(w * 0.72, -h * 0.18, w * 0.66, -h * 0.04);
+      ctx.quadraticCurveTo(w * 0.90, h * 0.10, w * 0.58, h * 0.28);
+      ctx.quadraticCurveTo(w * 0.80, h * 0.38, w * 0.42, h * 0.40);
+      ctx.quadraticCurveTo(w * 0.22, h * 0.36, w * 0.08, h * 0.20);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(236, 242, 255, 0.98)";
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = css(gold, 0.92);
+      ctx.lineWidth = Math.max(1.3, h * 0.05);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(129, 112, 200, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.20, h * 0.08);
+      ctx.quadraticCurveTo(w * 0.42, -h * 0.28, w * 0.78, -h * 0.30);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(w * 0.18, h * 0.18);
+      ctx.quadraticCurveTo(w * 0.46, h * 0.06, w * 0.62, h * 0.16);
+      ctx.stroke();
+      ctx.restore();
+    }
+    wing(-1);
+    wing(1);
+  }
+  function drawBannerOrnament(ctx, cx, cy, w, h, gold, stroke) {
+    if (theme && theme.ornament === "halo") {
+      drawWings(ctx, cx, cy + h * 0.06, w * 2.2, h * 1.45, gold);
+      drawHalo(ctx, cx, cy, w, h, gold);
+    }
+    drawCrown(ctx, cx, cy, w, h, gold, stroke);
+  }
+  function drawCloudBand(ctx, atTop) {
+    const bumps = [
+      [0.00, 1.15, 0.55], [0.10, 0.95, 0.48], [0.22, 1.25, 0.62],
+      [0.36, 1.00, 0.50], [0.50, 1.30, 0.66], [0.64, 0.98, 0.50],
+      [0.78, 1.22, 0.60], [0.90, 1.00, 0.50], [1.00, 1.18, 0.58]
+    ];
+    const y0 = atTop ? 36 : (H - 28);
+    const dir = atTop ? 1 : -1;
+    ctx.save();
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.fillStyle = pass === 0 ? "rgba(245,252,255,0.72)" : "rgba(255,255,255,0.80)";
+      const lift = pass === 0 ? 18 : 0;
+      for (let i = 0; i < bumps.length; i++) {
+        const x = bumps[i][0] * W;
+        const rx = bumps[i][1] * 92;
+        const ry = bumps[i][2] * 70;
+        ctx.beginPath();
+        ctx.ellipse(x, y0 + dir * (ry * 0.15 + lift), rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  const SPARKLE_PLAN = {
+    low:  { nStar: 32, nStarSm: 48, nBokeh: 40, nDot: 32 },
+    mid:  { nStar: 44, nStarSm: 70, nBokeh: 62, nDot: 44 },
+    high: { nStar: 58, nStarSm: 88, nBokeh: 86, nDot: 68 }
+  };
+  const SPARKLE_COLORS = {
+    white: [255, 255, 255],
+    cool: [228, 242, 255],
+    warm: [255, 246, 230],
+    pink: [255, 232, 244],
+    gold: [255, 236, 160]
+  };
+  function fillSprite(size, valueFn, rgb) {
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const ctx = c.getContext("2d");
+    const img = ctx.createImageData(size, size);
+    const data = img.data;
+    const cx = size / 2, cy = size / 2;
+    const r = rgb[0], g = rgb[1], b = rgb[2];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const v = valueFn(x + 0.5 - cx, y + 0.5 - cy, size);
+        if (v <= 0.002) continue;
+        const i = (y * size + x) * 4;
+        data[i] = r; data[i+1] = g; data[i+2] = b;
+        data[i+3] = (Math.min(1, v) * 255) | 0;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+  function starValue(dx, dy, size) {
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const beam = Math.max(0.85, size * 0.026);
+    const armLen = size * 0.49;
+    const vert = Math.max(0, 1 - ax / beam) * Math.max(0, 1 - ay / armLen);
+    const horz = Math.max(0, 1 - ay / beam) * Math.max(0, 1 - ax / armLen);
+    const arms = Math.pow(vert, 1.12) + Math.pow(horz, 1.12);
+    const rx = (dx + dy) * 0.70710678, ry = (dx - dy) * 0.70710678;
+    const diagW = Math.max(0.55, size * 0.016);
+    const diagLen = size * 0.30;
+    const d1 = Math.max(0, 1 - Math.abs(rx) / diagW) * Math.max(0, 1 - Math.abs(ry) / diagLen);
+    const d2 = Math.max(0, 1 - Math.abs(ry) / diagW) * Math.max(0, 1 - Math.abs(rx) / diagLen);
+    const diags = 0.42 * (Math.pow(d1, 1.2) + Math.pow(d2, 1.2));
+    const core = Math.pow(Math.max(0, 1 - dist / (size * 0.11)), 0.42);
+    const glow = Math.pow(Math.max(0, 1 - dist / (size * 0.34)), 2.35) * 0.75;
+    return Math.min(1, Math.pow(arms * 1.2 + diags + core * 1.55 + glow, 0.76));
+  }
+  function bokehValue(dx, dy, size) {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const sigma = size * 0.22;
+    return Math.min(1, Math.exp(-(dist * dist) / (2 * sigma * sigma)) * 0.90);
+  }
+  function dotValue(dx, dy, size) {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const core = Math.pow(Math.max(0, 1 - dist / (size * 0.16)), 0.5);
+    const glow = Math.pow(Math.max(0, 1 - dist / (size * 0.46)), 2.15) * 0.65;
+    return Math.min(1, core * 1.25 + glow);
+  }
+  function tintedSet(sizes, valueFn) {
+    const keys = Object.keys(SPARKLE_COLORS);
+    return sizes.map(function (s) {
+      const o = {};
+      for (let i = 0; i < keys.length; i++) o[keys[i]] = fillSprite(s, valueFn, SPARKLE_COLORS[keys[i]]);
+      return o;
+    });
+  }
+  let sparkleSheets = null;
+  function ensureSparkleSprites() {
+    if (sparkleSheets) return;
+    sparkleSheets = {
+      flare: tintedSet([64, 88, 112, 136], starValue),
+      star: tintedSet([28, 40, 52, 68], starValue),
+      bokeh: tintedSet([24, 38, 54, 76, 100], bokehValue),
+      dot: tintedSet([10, 14, 18, 24], dotValue)
+    };
+  }
+  function pickColorKey(rand) {
+    const set = (currentTheme() || {}).sparkleSet;
+    const r = rand();
+    if (set === "gojiai") {
+      if (r < 0.42) return "white";
+      if (r < 0.70) return "cool";
+      if (r < 0.86) return "gold";
+      return "pink";
+    }
+    if (r < 0.46) return "white";
+    if (r < 0.72) return "cool";
+    if (r < 0.88) return "warm";
+    return "pink";
+  }
+  function addSparkleGroup(rand, n, kind, sizes, modes, baseA0, baseA1, drift, speed0, speed1) {
+    for (let i = 0; i < n; i++) {
+      const si = Math.min(sizes.length - 1, (Math.pow(rand(), 1.4) * sizes.length) | 0);
+      const mode = modes[(rand() * modes.length) | 0];
+      sparkles.push({
+        kind: kind,
+        si: si,
+        color: pickColorKey(rand),
+        x: 8 + rand() * (W - 16),
+        y: 16 + rand() * (H - 32),
+        phase: rand() * Math.PI * 2,
+        speed: speed0 + rand() * (speed1 - speed0),
+        driftX: (rand() - 0.5) * drift,
+        driftY: (rand() - 0.5) * drift * 0.8,
+        driftS: 0.22 + rand() * 0.45,
+        baseA: baseA0 + rand() * (baseA1 - baseA0),
+        mode: mode,
+        rot: (kind === "flare" || kind === "star") && rand() < 0.18 ? (rand() - 0.5) * 0.4 : 0
+      });
+    }
+  }
+  function initSparkles() {
+    ensureSparkleSprites();
+    const plan = SPARKLE_PLAN[state.sparkleAmount] || SPARKLE_PLAN.high;
+    const rand = seedRng(42);
+    sparkles = [];
+    addSparkleGroup(rand, plan.nStar, "flare", sparkleSheets.flare, ["pulse", "pulse", "flash"], 0.38, 0.82, 18, 1.0, 2.6);
+    addSparkleGroup(rand, plan.nStarSm, "star", sparkleSheets.star, ["pulse", "flash", "pulse"], 0.40, 0.95, 16, 1.3, 3.4);
+    addSparkleGroup(rand, plan.nBokeh, "bokeh", sparkleSheets.bokeh, ["soft", "soft", "pulse"], 0.22, 0.58, 42, 0.45, 1.3);
+    addSparkleGroup(rand, plan.nDot, "dot", sparkleSheets.dot, ["pulse", "flash", "soft"], 0.35, 0.9, 14, 1.2, 3.6);
+  }
+  function sparkleTwinkle(sp, t) {
+    const s = Math.sin(sp.phase + t * sp.speed);
+    if (sp.mode === "flash") {
+      const k = Math.max(0, s);
+      return 0.07 + 0.93 * Math.pow(k, 5.5);
+    }
+    if (sp.mode === "soft") {
+      return 0.30 + 0.55 * (0.5 + 0.5 * s);
+    }
+    return 0.40 + 0.60 * Math.pow(0.5 + 0.5 * s, 1.05);
+  }
+  function drawSparkles(ctx, t) {
+    if (!sparkleSheets) ensureSparkleSprites();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < sparkles.length; i++) {
+      const sp = sparkles[i];
+      const tw = sparkleTwinkle(sp, t);
+      const a = sp.baseA * tw;
+      if (a < 0.04) continue;
+      const x = sp.x + Math.sin(sp.phase * 0.55 + t * sp.driftS) * sp.driftX;
+      const y = sp.y + Math.cos(sp.phase * 0.4 + t * sp.driftS * 0.85) * sp.driftY;
+      const sheet = sparkleSheets[sp.kind];
+      const spr = sheet[sp.si][sp.color];
+      ctx.globalAlpha = a;
+      if (sp.rot) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(sp.rot);
+        ctx.drawImage(spr, -spr.width / 2, -spr.height / 2);
+        ctx.restore();
+      } else {
+        ctx.drawImage(spr, x - spr.width / 2, y - spr.height / 2);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  const $ = (id) => document.getElementById(id);
+
+  const now = new Date();
+  const state = {
+    storeName: "",
+    theme: "myumyu",
+    color1: "#ff5a96",
+    color2: "#14080c",
+    sparkleAmount: "high",
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    footer: "",
+    logoData: null,
+    roster: [],
+    todayIds: []
+  };
+
+  let theme = THEMES.myumyu;
+  let layout = null;
+  const images = {};
+  let logoImg = null;
+  let themeLogoImg = null, themeLogoKey = null;
+  let staticLayer = null;
+  let sparkles = [];
+  let playing = false, playTimer = 0, playStart = 0;
+  let saving = false;
+
+  const work = $("work");
+  const wctx = work.getContext("2d", { alpha: false });
+  const preview = $("preview");
+  const pctx = preview.getContext("2d", { alpha: false });
+
+  let idb;
+  function openDb() {
+    return new Promise(function (resolve, reject) {
+      if (!window.indexedDB) { resolve(null); return; }
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = function () { idb = req.result; resolve(idb); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function idbGet(key) {
+    return new Promise(function (resolve, reject) {
+      if (!idb) { resolve(null); return; }
+      const r = idb.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
+      r.onsuccess = function () { resolve(r.result || null); };
+      r.onerror = function () { reject(r.error); };
+    });
+  }
+  function idbSet(key, val) {
+    return new Promise(function (resolve, reject) {
+      if (!idb) { resolve(); return; }
+      const r = idb.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(val, key);
+      r.onsuccess = function () { resolve(); };
+      r.onerror = function () { reject(r.error); };
+    });
+  }
+
+  function newId() {
+    return "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  }
+  function personById(id) {
+    for (let i = 0; i < state.roster.length; i++) if (state.roster[i].id === id) return state.roster[i];
+    return null;
+  }
+  function todayPeople() {
+    const out = [];
+    for (let i = 0; i < state.todayIds.length; i++) {
+      const p = personById(state.todayIds[i]);
+      if (p) out.push(p);
+    }
+    return out;
+  }
+
+  let saveTimer = 0;
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { saveAll().catch(function (e) { console.warn(e); }); }, 250);
+  }
+  function metaPayload() {
+    return {
+      storeName: state.storeName,
+      theme: state.theme,
+      color1: state.color1,
+      color2: state.color2,
+      sparkleAmount: state.sparkleAmount,
+      year: state.year,
+      month: state.month,
+      day: state.day,
+      footer: state.footer,
+      todayIds: state.todayIds.slice(),
+      roster: state.roster.map(function (p) {
+        return { id: p.id, name: p.name || "", ox: p.ox ?? 0.5, oy: p.oy ?? 0.5, shift: p.shift || "", note: p.note || "" };
+      })
+    };
+  }
+  async function saveAll() {
+    const all = { version: 1, settings: metaPayload() };
+    try { localStorage.setItem(LS_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); }
+    const photos = {};
+    for (let i = 0; i < state.roster.length; i++) {
+      const p = state.roster[i];
+      if (p.dataUrl) photos[p.id] = p.dataUrl;
+    }
+    try { await idbSet("pack", { logo: state.logoData, photos: photos }); } catch (e) { console.warn(e); }
+  }
+  async function loadAll() {
+    let all = {};
+    try { all = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch (e) {}
+    const s = all.settings || all;
+    if (s) {
+      if (s.storeName != null) state.storeName = s.storeName;
+      if (s.theme) state.theme = s.theme;
+      if (s.color1) state.color1 = s.color1;
+      if (s.color2) state.color2 = s.color2;
+      if (s.sparkleAmount) state.sparkleAmount = s.sparkleAmount;
+      if (s.year) state.year = s.year;
+      if (s.month) state.month = s.month;
+      if (s.day) state.day = s.day;
+      if (s.footer != null) state.footer = s.footer;
+      if (Array.isArray(s.todayIds)) state.todayIds = s.todayIds.slice();
+      if (Array.isArray(s.roster)) {
+        state.roster = s.roster.map(function (p) {
+          return {
+            id: p.id || newId(),
+            name: p.name || "",
+            ox: p.ox ?? 0.5,
+            oy: p.oy ?? 0.5,
+            shift: p.shift || "",
+            note: p.note || "",
+            dataUrl: null
+          };
+        });
+      }
+    }
+    const pack = await idbGet("pack");
+    if (pack) {
+      if (pack.logo || pack.logo === "") {
+        state.logoData = pack.logo;
+        await setLogo(pack.logo);
+      }
+      if (pack.photos) {
+        for (let i = 0; i < state.roster.length; i++) {
+          const p = state.roster[i];
+          const url = pack.photos[p.id];
+          if (url) {
+            p.dataUrl = url;
+            await setPersonImage(p.id, url);
+          }
+        }
+      }
+    }
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      const im = new Image();
+      im.onload = function () { resolve(im); };
+      im.onerror = reject;
+      im.src = src;
+    });
+  }
+  async function setPersonImage(id, dataUrl) {
+    images[id] = await loadImage(dataUrl);
+  }
+  async function setLogo(dataUrl) {
+    logoImg = dataUrl ? await loadImage(dataUrl) : null;
+  }
+  async function ensureThemeLogo() {
+    const data = (THEMES[state.theme] && THEMES[state.theme].logo) || null;
+    if (!data || state.logoData) {
+      if (!data) { themeLogoImg = null; themeLogoKey = null; }
+      return;
+    }
+    if (state.logoData === "") return;
+    if (themeLogoKey === state.theme && themeLogoImg) return;
+    try {
+      themeLogoImg = await loadImage(data);
+      themeLogoKey = state.theme;
+    } catch (e) {
+      themeLogoImg = null;
+      themeLogoKey = null;
+    }
+  }
+  function activeLogo() {
+    if (state.logoData) return logoImg;
+    if (state.logoData === "") return null;
+    return themeLogoImg;
+  }
+  function readFile(file, maxEdge, quality) {
+    maxEdge = maxEdge || 900;
+    quality = quality || 0.84;
+    return new Promise(function (resolve, reject) {
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = function () {
+        const im = new Image();
+        im.onload = function () {
+          const scale = Math.min(1, maxEdge / Math.max(im.width, im.height));
+          const w = Math.max(2, Math.round(im.width * scale));
+          const h = Math.max(2, Math.round(im.height * scale));
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(im, 0, 0, w, h);
+          resolve(c.toDataURL("image/jpeg", quality));
+        };
+        im.onerror = reject;
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function currentTheme() {
+    if (state.theme === "custom") return deriveCustom(state.color1, state.color2);
+    return THEMES[state.theme] || THEMES.myumyu;
+  }
+
+  function rowPlan(n) {
+    if (n <= 0) return { cols: 2, rows: 1, counts: [0] };
+    if (n === 1) return { cols: 1, rows: 1, counts: [1] };
+    if (n === 2) return { cols: 2, rows: 1, counts: [2] };
+    if (n === 3) return { cols: 2, rows: 2, counts: [2, 1] };
+    if (n === 4) return { cols: 2, rows: 2, counts: [2, 2] };
+    if (n === 5) return { cols: 3, rows: 2, counts: [3, 2] };
+    if (n === 6) return { cols: 3, rows: 2, counts: [3, 3] };
+    if (n === 7) return { cols: 3, rows: 3, counts: [3, 3, 1] };
+    if (n === 8) return { cols: 3, rows: 3, counts: [3, 3, 2] };
+    if (n === 9) return { cols: 3, rows: 3, counts: [3, 3, 3] };
+    if (n === 10) return { cols: 3, rows: 4, counts: [3, 3, 3, 1] };
+    if (n === 11) return { cols: 3, rows: 4, counts: [3, 3, 3, 2] };
+    return { cols: 3, rows: 4, counts: [3, 3, 3, 3] };
+  }
+
+  function timingFor(n) {
+    const start = n <= 3 ? 0.65 : 0.50;
+    const popDur = 0.42;
+    const minHold = 2.0;
+    const minTotal = 6.0;
+    const maxTotal = 10.0;
+    let interval = n <= 1 ? 0 : (n <= 4 ? 0.40 : 0.34);
+    let hold = minHold;
+    let total = start + Math.max(0, n - 1) * interval + popDur + hold;
+    if (total < minTotal) {
+      hold = +(minTotal - (start + Math.max(0, n - 1) * interval + popDur)).toFixed(3);
+      total = minTotal;
+    }
+    if (total > maxTotal && n > 1) {
+      interval = Math.max(0.28, (maxTotal - start - popDur - minHold) / (n - 1));
+      total = start + (n - 1) * interval + popDur + minHold;
+      hold = minHold;
+    }
+    return { start: start, interval: interval, popDur: popDur, hold: hold, total: total };
+  }
+  function currentTiming() { return timingFor(todayPeople().length); }
+  function currentDuration() { return currentTiming().total; }
+
+  function fitFont(ctx, text, maxW, weight, size, family, minSize) {
+    minSize = minSize || 18;
+    let s = size;
+    ctx.font = weight + " " + s + "px " + family;
+    while (s > minSize && ctx.measureText(text).width > maxW) {
+      s -= 1;
+      ctx.font = weight + " " + s + "px " + family;
+    }
+    return s;
+  }
+
+  function computeLayout(n, people) {
+    people = people || [];
+    const plan = rowPlan(n);
+    const compact = plan.rows >= 4;
+    const mid = plan.rows === 3;
+    const hasLogo = !!activeLogo();
+    const topPad = hasLogo ? (compact ? 22 : 28) : (compact ? 36 : 48);
+    const logoH = hasLogo ? (compact ? 72 : 100) : 0;
+    const storeY = topPad + logoH + (hasLogo ? 10 : 0);
+    const dateSize = compact ? 78 : (n <= 2 ? 118 : 96);
+    const dateY = storeY + 46;
+    const titleY = dateY + dateSize + (compact ? 8 : 14);
+    const subY = titleY + (compact ? 50 : 62);
+    const decoY = subY + (compact ? 40 : 46);
+    const gridTop = decoY + (compact ? 16 : 24);
+    const footerH = (state.footer || "").trim() ? (compact ? 70 : 86) : (compact ? 36 : 48);
+    const gridBottom = H - footerH;
+    const availH = Math.max(200, gridBottom - gridTop);
+    const gapX = plan.cols === 1 ? 0 : (plan.cols === 2 ? 28 : 18);
+    const gapY = compact ? 14 : (mid ? 20 : 26);
+    const side = plan.cols === 1 ? 130 : (plan.cols === 2 ? 70 : 58);
+    const gridW = W - side * 2;
+    let cellW = plan.cols <= 0 ? gridW : (gridW - gapX * (plan.cols - 1)) / plan.cols;
+    if (plan.cols === 1) cellW = Math.min(760, gridW);
+    let cellH = (availH - gapY * (plan.rows - 1)) / Math.max(1, plan.rows);
+    if (n <= 1) cellH = Math.min(cellH, 1180);
+    if (n === 2) cellH = Math.min(cellH, 1120);
+    const nameBar = (function () {
+      let needShift = false;
+      for (let i = 0; i < people.length; i++) if ((people[i].shift || "").trim()) { needShift = true; break; }
+      if (compact) return needShift ? 78 : 58;
+      if (plan.cols === 1) return needShift ? 118 : 90;
+      if (plan.cols === 2) return needShift ? 100 : 76;
+      return needShift ? 88 : 66;
+    })();
+    const radius = plan.cols === 1 ? 32 : (plan.cols === 2 ? 24 : 18);
+    const border = plan.cols === 1 ? 6 : 4;
+    const cells = [];
+    const gridH = cellH * plan.rows + gapY * (plan.rows - 1);
+    const gridY = gridTop + Math.max(0, (availH - gridH) / 2);
+    let idx = 0;
+    for (let r = 0; r < plan.rows; r++) {
+      const count = plan.counts[r] || 0;
+      const rowW = count * cellW + Math.max(0, count - 1) * gapX;
+      const x0 = (W - rowW) / 2;
+      const y = gridY + r * (cellH + gapY);
+      for (let c = 0; c < count; c++) {
+        const x = x0 + c * (cellW + gapX);
+        cells.push({ x: x, y: y, w: cellW, h: cellH, i: idx });
+        idx++;
+      }
+    }
+    return {
+      n: n, plan: plan, compact: compact, topPad: topPad, logoH: logoH,
+      storeY: storeY, dateY: dateY, dateSize: dateSize, titleY: titleY, subY: subY, decoY: decoY,
+      gridTop: gridTop, gridBottom: gridBottom, gridY: gridY, gridH: gridH, gridW: gridW,
+      cellW: cellW, cellH: cellH, gapX: gapX, gapY: gapY, nameBar: nameBar,
+      radius: radius, border: border, cells: cells, footerH: footerH, side: side
+    };
+  }
+
+  function weekdayOfState() {
+    return WEEK_EN[new Date(state.year, state.month - 1, state.day).getDay()];
+  }
+  function dateLabel() {
+    return String(state.month) + "/" + String(state.day);
+  }
+
+  function inkMain(th) {
+    return th.light ? th.subheader : th.header.slice(0, 3);
+  }
+  function inkSoft(th) {
+    return th.light ? th.subheader : (th.accentLight || th.subheader);
+  }
+
+  function drawHeader(ctx, L, th) {
+    const logo = activeLogo();
+    if (logo) {
+      const wide = logo.width / Math.max(1, logo.height) > 1.35;
+      const maxW = L.compact ? 130 : 170;
+      const maxH = wide ? (L.compact ? 54 : 70) : L.logoH;
+      const sc = Math.min(maxW / logo.width, maxH / logo.height);
+      const lw = logo.width * sc, lh = logo.height * sc;
+      ctx.drawImage(logo, 36, L.topPad, lw, lh);
+    }
+    if (state.storeName) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      const size = L.compact ? 26 : 30;
+      fitFont(ctx, state.storeName, W * 0.72, "500", size, FONTS.sans, 18);
+      ctx.fillStyle = css(inkSoft(th), 0.95);
+      if (th.textShadow) {
+        ctx.shadowColor = "rgba(255,255,255,0.85)";
+        ctx.shadowBlur = 8;
+      }
+      ctx.fillText(state.storeName, W / 2, L.storeY);
+      ctx.restore();
+    }
+
+    const date = dateLabel();
+    const wd = weekdayOfState();
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.font = "700 " + L.dateSize + "px " + FONTS.display;
+    const dateW = ctx.measureText(date).width;
+    ctx.font = "600 " + Math.max(34, (L.dateSize * 0.34) | 0) + "px " + FONTS.display;
+    const wdW = ctx.measureText(wd).width;
+    const gap = 20;
+    const total = dateW + gap + wdW;
+    const dx = W / 2 - total / 2;
+    if (th.textShadow) {
+      ctx.shadowColor = "rgba(20, 70, 95, 0.5)";
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 2;
+    } else {
+      ctx.shadowColor = "rgba(0,0,0,0.35)";
+      ctx.shadowBlur = th.light ? 0 : 10;
+    }
+    ctx.fillStyle = css(th.light ? th.goldDark || th.gold : (th.header.slice(0, 3)));
+    ctx.font = "700 " + L.dateSize + "px " + FONTS.display;
+    ctx.textAlign = "left";
+    ctx.fillText(date, dx, L.dateY);
+    ctx.fillStyle = css(th.gold);
+    ctx.font = "600 " + Math.max(34, (L.dateSize * 0.34) | 0) + "px " + FONTS.display;
+    const wdY = L.dateY + L.dateSize * 0.52;
+    ctx.fillText(wd, dx + dateW + gap, wdY);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const title = "本日の出勤";
+    const tSize = L.compact ? 52 : 62;
+    ctx.font = "700 " + tSize + "px " + FONTS.serif;
+    if (th.textShadow) {
+      ctx.shadowColor = "rgba(20, 70, 95, 0.45)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 1;
+    } else if (!th.light) {
+      ctx.shadowColor = css(th.accent, 0.45);
+      ctx.shadowBlur = 16;
+    }
+    ctx.fillStyle = css(th.light ? th.gold : inkMain(th));
+    ctx.fillText(title, W / 2, L.titleY);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const subSize = L.compact ? 22 : 26;
+    ctx.font = "600 " + subSize + "px " + FONTS.display;
+    ctx.fillStyle = css(th.gold, 0.95);
+    if (th.textShadow) {
+      ctx.shadowColor = "rgba(20, 70, 95, 0.4)";
+      ctx.shadowBlur = 6;
+    }
+    ctx.fillText("TODAY'S CAST", W / 2, L.subY);
+    ctx.restore();
+
+    ctx.save();
+    const lineW = L.compact ? 220 : 280;
+    const ly = L.decoY;
+    ctx.strokeStyle = css(th.gold, th.light ? 0.75 : 0.65);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - lineW, ly);
+    ctx.lineTo(W / 2 - 18, ly);
+    ctx.moveTo(W / 2 + 18, ly);
+    ctx.lineTo(W / 2 + lineW, ly);
+    ctx.stroke();
+    if (th.ornament === "halo") {
+      drawHalo(ctx, W / 2, ly + 2, 36, 16, th.gold);
+    } else {
+      ctx.fillStyle = css(th.gold);
+      ctx.beginPath();
+      ctx.moveTo(W / 2, ly - 7);
+      ctx.lineTo(W / 2 + 8, ly);
+      ctx.lineTo(W / 2, ly + 7);
+      ctx.lineTo(W / 2 - 8, ly);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawFooter(ctx, L, th) {
+    const text = (state.footer || "").trim();
+    if (!text) return;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const y = H - L.footerH / 2 - 6;
+    fitFont(ctx, text, W * 0.86, "600", L.compact ? 26 : 30, FONTS.sans, 18);
+    if (th.light) {
+      ctx.fillStyle = css(th.accentDark || th.subheader, 0.95);
+      ctx.shadowColor = "rgba(20, 60, 80, 0.35)";
+      ctx.shadowBlur = 8;
+    } else {
+      ctx.fillStyle = css(inkSoft(th), 0.95);
+    }
+    ctx.fillText(text, W / 2, y);
+    ctx.restore();
+  }
+
+  function drawEmptySlot(ctx, cell, L, th) {
+    ctx.save();
+    ctx.globalAlpha = th.light ? 0.50 : 0.40;
+    const fill = th.light ? "rgba(255,255,255,0.62)" : css(th.emptyTop, 0.45);
+    fillRound(ctx, cell.x, cell.y, cell.w, cell.h, L.radius, fill);
+    ctx.strokeStyle = css(th.cellBorder, th.light ? 0.55 : 0.28);
+    ctx.lineWidth = 2;
+    roundedRect(ctx, cell.x, cell.y, cell.w, cell.h, L.radius);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCastCard(ctx, person, cell, L, th, scale, alpha) {
+    const cx = cell.x + cell.w / 2;
+    const cy = cell.y + cell.h / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
+    ctx.globalAlpha = alpha;
+
+    const x = cell.x, y = cell.y, w = cell.w, h = cell.h;
+    const bar = L.nameBar;
+    const photoH = h - bar;
+    ctx.save();
+    ctx.shadowColor = th.light ? "rgba(20,60,80,0.22)" : "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 8;
+    fillRound(ctx, x, y, w, h, L.radius, css(th.cellBorder));
+    ctx.restore();
+
+    const img = images[person.id];
+    if (img) {
+      drawCoverClipped(ctx, img, x, y, w, photoH + 2, L.radius, person.ox, person.oy, 0, null);
+      // re-fill bottom corners of photo so name bar sits flush; clip already rounded top
+    } else {
+      ctx.save();
+      roundedRect(ctx, x, y, w, photoH + 2, L.radius);
+      ctx.clip();
+      verticalGradient(ctx, x, y, w, photoH, th.emptyTop, th.emptyBottom);
+      ctx.restore();
+    }
+    // name bar
+    fillRound(ctx, x, y + photoH - 2, w, bar + 2, L.radius, css(th.labelBg, 0.98));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - 1, y + photoH - 2, w + 2, 16);
+    ctx.clip();
+    ctx.fillStyle = css(th.labelBg, 0.98);
+    ctx.fillRect(x - 1, y + photoH - 2, w + 2, 16);
+    ctx.restore();
+    ctx.strokeStyle = css(th.cellBorder);
+    ctx.lineWidth = L.border;
+    roundedRect(ctx, x, y, w, h, L.radius);
+    ctx.stroke();
+
+    const name = (person.name || " ").trim() || " ";
+    const shift = (person.shift || "").trim();
+    const note = (person.note || "").trim();
+    const textX = x + w / 2;
+    const nameY = shift ? (y + photoH + bar * 0.38) : (y + photoH + bar * 0.52);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const nameSize = L.plan.cols === 1 ? 52 : (L.plan.cols === 2 ? 36 : (L.compact ? 26 : 30));
+    fitFont(ctx, name, w - 20, "700", nameSize, FONTS.serif, 16);
+    ctx.fillStyle = css(th.labelFg);
+    ctx.fillText(name, textX, nameY);
+    if (shift) {
+      const shSize = L.plan.cols === 1 ? 28 : (L.compact ? 18 : 22);
+      fitFont(ctx, shift, w - 20, "500", shSize, FONTS.sans, 14);
+      ctx.fillStyle = css(th.light ? th.accentDark : th.accentDark, 0.95);
+      ctx.fillText(shift, textX, y + photoH + bar * 0.72);
+    }
+
+    if (note) {
+      const badgeSize = L.compact ? 18 : (L.plan.cols === 1 ? 26 : 20);
+      ctx.font = "700 " + badgeSize + "px " + FONTS.sans;
+      const tw = ctx.measureText(note).width;
+      const bw = Math.min(w - 16, tw + 22);
+      const bh = badgeSize + 14;
+      const bx = x + w - L.border - 8 - bw;
+      const by = y + L.border + 8;
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.25)";
+      ctx.shadowBlur = 8;
+      fillRound(ctx, bx, by, bw, bh, bh / 2, css(th.accent, 0.94));
+      ctx.restore();
+      ctx.fillStyle = th.light ? "#fff" : "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "700 " + badgeSize + "px " + FONTS.sans;
+      ctx.fillText(note, bx + bw / 2, by + bh / 2 + 1);
+    }
+    ctx.restore();
+  }
+
+  function popAmount(t, appearAt, popDur) {
+    if (t < appearAt) return { scale: 0, alpha: 0, visible: false };
+    const u = Math.min(1, (t - appearAt) / popDur);
+    const sc = easeOutBack(u, 2.35);
+    const a = Math.min(1, u / 0.35);
+    return { scale: sc, alpha: a, visible: true, u: u };
+  }
+
+  function buildStatic() {
+    theme = currentTheme();
+    const people = todayPeople();
+    layout = computeLayout(people.length, people);
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d");
+    verticalGradient(ctx, 0, 0, W, H, theme.bgTop, theme.bgBottom);
+    radial(ctx, W * 0.5, H * 0.12, W * 0.85, theme.glowB, theme.light ? 0.28 : 0.40);
+    radial(ctx, W * 0.08, H * 0.55, W * 0.7, theme.glowA, theme.light ? 0.22 : 0.35);
+    radial(ctx, W * 0.9, H * 0.8, W * 0.6, theme.glowC, theme.light ? 0.2 : 0.3);
+    ctx.save();
+    ctx.strokeStyle = css(theme.gold, theme.light ? 0.22 : 0.28);
+    ctx.lineWidth = 2;
+    const corners = [[24,24,1,1],[W-24,24,-1,1],[24,H-24,1,-1],[W-24,H-24,-1,-1]];
+    for (let i = 0; i < corners.length; i++) {
+      const x = corners[i][0], y = corners[i][1], sx = corners[i][2], sy = corners[i][3];
+      const rads = [40, 70, 100];
+      for (let j = 0; j < rads.length; j++) {
+        const rad = rads[j];
+        ctx.beginPath();
+        let start = 0, end = 0;
+        if (sx > 0 && sy > 0) { start = Math.PI; end = Math.PI * 1.5; }
+        else if (sx < 0 && sy > 0) { start = Math.PI * 1.5; end = Math.PI * 2; }
+        else if (sx > 0 && sy < 0) { start = Math.PI * 0.5; end = Math.PI; }
+        else { start = 0; end = Math.PI * 0.5; }
+        ctx.arc(x, y, rad, start, end);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    if (theme.clouds) {
+      drawCloudBand(ctx, true);
+      drawCloudBand(ctx, false);
+    }
+    const vig = ctx.createRadialGradient(W / 2, H * 0.48, W * 0.25, W / 2, H * 0.48, W * 0.85);
+    if (theme.vignette === "mist") {
+      vig.addColorStop(0, "rgba(255,255,255,0)");
+      vig.addColorStop(1, "rgba(255,255,255,0.18)");
+    } else if (theme.light) {
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(40,50,70,0.18)");
+    } else {
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(0,0,0,0.55)");
+    }
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, W, H);
+
+    drawHeader(ctx, layout, theme);
+    drawFooter(ctx, layout, theme);
+    for (let i = 0; i < layout.cells.length; i++) drawEmptySlot(ctx, layout.cells[i], layout, theme);
+    staticLayer = c;
+  }
+
+  function drawFrame(ctx, t) {
+    if (!staticLayer) buildStatic();
+    ctx.drawImage(staticLayer, 0, 0);
+    const people = todayPeople();
+    const tm = timingFor(people.length);
+    const L = layout;
+    const th = theme;
+    for (let i = 0; i < people.length; i++) {
+      const appearAt = tm.start + i * tm.interval;
+      const pop = popAmount(t, appearAt, tm.popDur);
+      if (!pop.visible) continue;
+      const cell = L.cells[i];
+      if (!cell) continue;
+      const lift = (1 - Math.min(1, pop.u / 0.85)) * 28;
+      ctx.save();
+      ctx.translate(0, lift);
+      drawCastCard(ctx, people[i], cell, L, th, pop.scale, pop.alpha);
+      ctx.restore();
+    }
+    if (people.length === 0) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 40px " + FONTS.sans;
+      ctx.fillStyle = css(inkSoft(th), 0.8);
+      ctx.fillText("出勤者を選んでください", W / 2, H * 0.52);
+      ctx.restore();
+    }
+    drawSparkles(ctx, t);
+  }
+
+  function blitPreview() {
+    pctx.drawImage(work, 0, 0, preview.width, preview.height);
+  }
+  function redrawPoster() {
+    const d = currentDuration();
+    drawFrame(wctx, d - 1 / FPS);
+    blitPreview();
+    updateDurationHint();
+  }
+
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(ctx, dest, t0, freq, amp, decay) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(amp, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+    osc.connect(g); g.connect(dest);
+    osc.start(t0); osc.stop(t0 + decay + 0.04);
+  }
+  function scheduleSfx(ctx, dest, when) {
+    const people = todayPeople();
+    const tm = timingFor(people.length);
+    for (let i = 0; i < people.length; i++) {
+      const t = when + tm.start + i * tm.interval;
+      playTone(ctx, dest, t, 1320 + (i % 3) * 180, 0.055, 0.22);
+      playTone(ctx, dest, t + 0.03, 1980 + (i % 3) * 220, 0.035, 0.28);
+    }
+  }
+
+  function pickMime() {
+    const types = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4;codecs=avc1.42001E",
+      "video/mp4;codecs=avc1.42E01E",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8,opus",
+      "video/webm;codecs=vp8",
+      "video/webm"
+    ];
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    for (let i = 0; i < types.length; i++) {
+      try { if (MediaRecorder.isTypeSupported(types[i])) return types[i]; } catch (e) {}
+    }
+    return "";
+  }
+  function extFor(mime) {
+    return (mime || "").indexOf("mp4") >= 0 ? "mp4" : "webm";
+  }
+  function fileBase() {
+    const n = (state.storeName || "shukkin").replace(/[\\/:*?"<>|]/g, "");
+    return "shukkin_" + state.year + "-" + String(state.month).padStart(2, "0") + "-" + String(state.day).padStart(2, "0") + "_" + n;
+  }
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    return url;
+  }
+  async function maybeShare(blob, filename, title) {
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: title }); return true; } catch (e) {
+        if (e && e.name === "AbortError") return true;
+      }
+    }
+    downloadBlob(blob, filename);
+    return false;
+  }
+  function setStatus(msg, cls) {
+    const el = $("status");
+    el.className = "status " + (cls || "");
+    el.textContent = msg || "";
+  }
+  function setProgress(p) {
+    const el = $("progress");
+    if (p == null) { el.classList.remove("show"); return; }
+    el.classList.add("show");
+    el.firstElementChild.style.width = Math.round(clamp(p, 0, 1) * 100) + "%";
+  }
+
+  async function recordVideo() {
+    if (!window.MediaRecorder) {
+      throw new Error("このブラウザは動画の書き出しに対応していません。Safari または Chrome の最新版で開いてください。");
+    }
+    const mime = pickMime();
+    if (!mime) {
+      throw new Error("このブラウザでは動画形式が使えません。Safari で開き直してください。");
+    }
+    buildStatic();
+    const DURATION = currentDuration();
+    const stream = work.captureStream(FPS);
+    const vtrack = stream.getVideoTracks()[0];
+    let recStream = stream;
+    let ctx = null;
+    const wantSfx = $("sfxOn").checked;
+    if (wantSfx) {
+      ctx = ensureAudio();
+      const dest = ctx.createMediaStreamDestination();
+      recStream = new MediaStream([vtrack].concat(dest.stream.getAudioTracks()));
+      scheduleSfx(ctx, dest, ctx.currentTime + 0.05);
+    }
+    const opts = { mimeType: mime, videoBitsPerSecond: 8000000 };
+    let rec;
+    try { rec = new MediaRecorder(recStream, opts); }
+    catch (e) { rec = new MediaRecorder(recStream); }
+    const chunks = [];
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(function (resolve, reject) {
+      rec.onstop = resolve;
+      rec.onerror = function (ev) { reject(ev.error || new Error("録画に失敗しました")); };
+    });
+    rec.start(100);
+    const t0 = performance.now();
+    await new Promise(function (resolve) {
+      const tick = function () {
+        const t = Math.min(DURATION, (performance.now() - t0) / 1000);
+        drawFrame(wctx, t);
+        blitPreview();
+        if (vtrack.requestFrame) try { vtrack.requestFrame(); } catch (e) {}
+        setProgress(t / DURATION);
+        if (t >= DURATION) resolve();
+        else requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    drawFrame(wctx, DURATION - 1 / FPS);
+    blitPreview();
+    if (vtrack.requestFrame) try { vtrack.requestFrame(); } catch (e) {}
+    if (rec.state === "recording") rec.stop();
+    await stopped;
+    stream.getTracks().forEach(function (t) { t.stop(); });
+    if (recStream !== stream) recStream.getTracks().forEach(function (t) { if (t.kind === "audio") t.stop(); });
+    const blob = new Blob(chunks, { type: rec.mimeType || mime });
+    if (!blob.size) throw new Error("動画データが空でした。別のブラウザで試してください。");
+    return { blob: blob, mime: rec.mimeType || mime };
+  }
+
+  function isLineBrowser() { return /Line\//i.test(navigator.userAgent); }
+  function isInAppBrowser() {
+    return isLineBrowser() || /FBAN|FBAV|Instagram|Twitter|MicroMessenger/i.test(navigator.userAgent);
+  }
+  function syncThemeButtons() {
+    document.querySelectorAll(".theme-btn").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.theme === state.theme);
+    });
+    $("customRow").classList.toggle("show", state.theme === "custom");
+    $("logoRow").classList.add("show");
+    $("logoHint").textContent = state.logoData ? "ロゴを使っています。" : (state.logoData === "" ? "ロゴは出していません。" : (THEMES[state.theme] && THEMES[state.theme].logo ? "テーマのロゴを使っています。" : "ロゴは未設定です。"));
+  }
+  function syncSparkleButtons() {
+    document.querySelectorAll("#sparkleAmt [data-sparkle]").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.sparkle === state.sparkleAmount);
+    });
+  }
+  function fillDateSelects() {
+    const yEl = $("year"), mEl = $("month"), dEl = $("day");
+    yEl.value = state.year;
+    if (!mEl.options.length) {
+      for (let m = 1; m <= 12; m++) {
+        const o = document.createElement("option");
+        o.value = String(m); o.textContent = m + "月";
+        mEl.appendChild(o);
+      }
+    }
+    mEl.value = String(state.month);
+    const n = daysInMonth(state.year, state.month);
+    if (state.day > n) state.day = n;
+    const prev = dEl.value;
+    dEl.innerHTML = "";
+    for (let d = 1; d <= n; d++) {
+      const o = document.createElement("option");
+      o.value = String(d); o.textContent = d + "日";
+      dEl.appendChild(o);
+    }
+    dEl.value = String(state.day);
+    if (prev && !dEl.value) dEl.value = String(n);
+  }
+  function updateDurationHint() {
+    const n = todayPeople().length;
+    const tm = timingFor(n);
+    const sec = Math.round(tm.total * 10) / 10;
+    $("durationHint").textContent = n ? ("出勤 " + n + "人 ・ 動画の長さ 約" + sec + "秒") : "出勤者を選ぶと、人数に合わせて動画の長さが決まります。";
+  }
+  function updateFormatHint() {
+    const mime = pickMime();
+    const ext = extFor(mime);
+    if (!window.MediaRecorder) {
+      $("formatHint").textContent = "このブラウザでは動画を保存できません。Safari または Chrome で開いてください。";
+    } else if (ext === "webm") {
+      $("formatHint").textContent = "このブラウザでは WebM で保存されます。Instagram 用には iPhone の Safari で保存すると MP4 になります。";
+    } else if (ext === "mp4") {
+      $("formatHint").textContent = "このブラウザでは MP4 で保存できます。";
+    } else {
+      $("formatHint").textContent = "";
+    }
+  }
+
+  function paintThumb(cv, person) {
+    const ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#2a1520";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    const img = person && images[person.id];
+    if (img) drawCover(ctx, img, 0, 0, cv.width, cv.height, person.ox, person.oy);
+  }
+
+  function renderRoster() {
+    const box = $("roster");
+    box.innerHTML = "";
+    for (let i = 0; i < state.roster.length; i++) {
+      const p = state.roster[i];
+      const on = state.todayIds.indexOf(p.id) >= 0;
+      const el = document.createElement("div");
+      el.className = "person" + (on ? " on" : "");
+      el.dataset.id = p.id;
+
+      const top = document.createElement("div");
+      top.className = "person-top";
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      thumb.dataset.pid = p.id;
+      const cv = document.createElement("canvas");
+      cv.width = 240; cv.height = 276;
+      const ph = document.createElement("div");
+      ph.className = "ph";
+      ph.textContent = p.dataUrl ? "ドラッグで位置調整" : "写真なし";
+      if (p.dataUrl) ph.style.display = "none";
+      thumb.appendChild(cv);
+      thumb.appendChild(ph);
+      paintThumb(cv, p);
+
+      const fields = document.createElement("div");
+      fields.className = "person-fields";
+      const name = document.createElement("input");
+      name.type = "text"; name.placeholder = "名前"; name.value = p.name || ""; name.dataset.field = "name"; name.dataset.pid = p.id; name.autocomplete = "off";
+      const shift = document.createElement("input");
+      shift.type = "text"; shift.placeholder = "時間（例：18:00〜LAST）"; shift.value = p.shift || ""; shift.dataset.field = "shift"; shift.dataset.pid = p.id; shift.autocomplete = "off";
+      const note = document.createElement("input");
+      note.type = "text"; note.placeholder = "タグ（任意・例：新人）"; note.value = p.note || ""; note.dataset.field = "note"; note.dataset.pid = p.id; note.autocomplete = "off";
+      const mini = document.createElement("div");
+      mini.className = "mini-row";
+      const lab = document.createElement("label");
+      lab.textContent = "写真を選ぶ";
+      const file = document.createElement("input");
+      file.type = "file"; file.accept = "image/*"; file.dataset.photo = p.id;
+      lab.appendChild(file);
+      const rmPhoto = document.createElement("button");
+      rmPhoto.type = "button"; rmPhoto.textContent = "写真をはずす"; rmPhoto.dataset.clearPhoto = p.id;
+      mini.appendChild(lab); mini.appendChild(rmPhoto);
+      fields.appendChild(name); fields.appendChild(shift); fields.appendChild(note); fields.appendChild(mini);
+
+      top.appendChild(thumb); top.appendChild(fields);
+      el.appendChild(top);
+
+      const chk = document.createElement("label");
+      chk.className = "chk";
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = on; cb.dataset.toggle = p.id;
+      chk.appendChild(cb);
+      chk.appendChild(document.createTextNode("今日出勤"));
+      el.appendChild(chk);
+
+      const actions = document.createElement("div");
+      actions.className = "mini-row";
+      actions.style.marginTop = "8px";
+      const rm = document.createElement("button");
+      rm.type = "button"; rm.textContent = "名簿から削除"; rm.dataset.remove = p.id;
+      actions.appendChild(rm);
+      el.appendChild(actions);
+
+      box.appendChild(el);
+    }
+  }
+
+  function renderTodayList() {
+    const box = $("todayList");
+    const empty = $("todayEmpty");
+    const pill = $("todayCount");
+    const people = todayPeople();
+    box.innerHTML = "";
+    if (!people.length) {
+      empty.style.display = "";
+      pill.classList.add("hidden");
+      return;
+    }
+    empty.style.display = "none";
+    pill.classList.remove("hidden");
+    pill.textContent = people.length + "人";
+    for (let i = 0; i < people.length; i++) {
+      const p = people[i];
+      const el = document.createElement("div");
+      el.className = "today-item";
+      const idx = document.createElement("div");
+      idx.className = "idx";
+      idx.textContent = String(i + 1);
+      const mt = document.createElement("div");
+      mt.className = "mini-thumb";
+      const cv = document.createElement("canvas");
+      cv.width = 112; cv.height = 128;
+      mt.appendChild(cv);
+      paintThumb(cv, p);
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const nm = document.createElement("div");
+      nm.className = "nm";
+      nm.textContent = p.name || "（名前なし）";
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      const bits = [];
+      if (p.shift) bits.push(p.shift);
+      if (p.note) bits.push(p.note);
+      sub.textContent = bits.join("  /  ") || "時間・タグなし";
+      meta.appendChild(nm); meta.appendChild(sub);
+      const ord = document.createElement("div");
+      ord.className = "ord";
+      const up = document.createElement("button");
+      up.type = "button"; up.textContent = "↑"; up.dataset.move = p.id; up.dataset.dir = "-1"; up.disabled = i === 0;
+      const down = document.createElement("button");
+      down.type = "button"; down.textContent = "↓"; down.dataset.move = p.id; down.dataset.dir = "1"; down.disabled = i === people.length - 1;
+      const off = document.createElement("button");
+      off.type = "button"; off.className = "off"; off.textContent = "外す"; off.dataset.untoggle = p.id;
+      ord.appendChild(up); ord.appendChild(down);
+      el.appendChild(idx); el.appendChild(mt); el.appendChild(meta); el.appendChild(ord);
+      // put 外す under meta? keep compact: append off into ord
+      ord.appendChild(off);
+      box.appendChild(el);
+    }
+  }
+
+  function toggleToday(id, want) {
+    const i = state.todayIds.indexOf(id);
+    const on = i >= 0;
+    if (want == null) want = !on;
+    if (want && !on) {
+      if (state.todayIds.length >= MAX_TODAY) {
+        setStatus("本日の出勤は最大" + MAX_TODAY + "人です。", "warn");
+        return false;
+      }
+      state.todayIds.push(id);
+    } else if (!want && on) {
+      state.todayIds.splice(i, 1);
+    }
+    return true;
+  }
+  function moveToday(id, dir) {
+    const i = state.todayIds.indexOf(id);
+    if (i < 0) return;
+    const j = i + dir;
+    if (j < 0 || j >= state.todayIds.length) return;
+    const tmp = state.todayIds[i];
+    state.todayIds[i] = state.todayIds[j];
+    state.todayIds[j] = tmp;
+  }
+
+  function addCast(prefill) {
+    prefill = prefill || {};
+    const p = {
+      id: newId(),
+      name: prefill.name || "",
+      ox: 0.5, oy: 0.5,
+      shift: prefill.shift || "",
+      note: prefill.note || "",
+      dataUrl: prefill.dataUrl || null
+    };
+    state.roster.push(p);
+    return p;
+  }
+
+  async function assignPhotoTo(id, file) {
+    const url = await readFile(file);
+    const p = personById(id);
+    if (!p) return;
+    p.dataUrl = url;
+    p.ox = 0.5; p.oy = 0.5;
+    await setPersonImage(id, url);
+    scheduleSave();
+    refreshLists();
+    buildStatic();
+    redrawPoster();
+  }
+
+  function refreshLists() {
+    renderRoster();
+    renderTodayList();
+    updateDurationHint();
+  }
+  function refreshAll() {
+    theme = currentTheme();
+    fillDateSelects();
+    $("storeName").value = state.storeName;
+    $("footerText").value = state.footer;
+    $("color1").value = state.color1;
+    $("color2").value = state.color2;
+    syncThemeButtons();
+    syncSparkleButtons();
+    refreshLists();
+    buildStatic();
+    redrawPoster();
+  }
+
+  function stopPreview() {
+    playing = false;
+    cancelAnimationFrame(playTimer);
+    $("btnPlay").textContent = "プレビュー再生";
+    redrawPoster();
+  }
+  function playPreview() {
+    if (playing) { stopPreview(); return; }
+    playing = true;
+    $("btnPlay").textContent = "停止";
+    const DURATION = currentDuration();
+    buildStatic();
+    const t0 = performance.now();
+    const tick = function () {
+      if (!playing) return;
+      const t = Math.min(DURATION, (performance.now() - t0) / 1000);
+      drawFrame(wctx, t);
+      blitPreview();
+      if (t >= DURATION) stopPreview();
+      else playTimer = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  function copyLink() {
+    const url = location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { setStatus("リンクをコピーしました。", "ok"); }).catch(function () { window.prompt("このリンクをコピーしてください", url); });
+    } else {
+      window.prompt("このリンクをコピーしてください", url);
+    }
+  }
+
+  function bindRosterEvents() {
+    const box = $("roster");
+    box.addEventListener("input", function (e) {
+      const t = e.target;
+      if (!t.dataset.pid || !t.dataset.field) return;
+      const p = personById(t.dataset.pid);
+      if (!p) return;
+      p[t.dataset.field] = t.value;
+      scheduleSave();
+      renderTodayList();
+      buildStatic();
+      redrawPoster();
+    });
+    box.addEventListener("change", async function (e) {
+      const t = e.target;
+      if (t.dataset.photo && t.files && t.files[0]) {
+        await assignPhotoTo(t.dataset.photo, t.files[0]);
+        t.value = "";
+      }
+      if (t.dataset.toggle) {
+        const ok = toggleToday(t.dataset.toggle, t.checked);
+        if (!ok) t.checked = false;
+        scheduleSave();
+        refreshLists();
+        buildStatic();
+        redrawPoster();
+      }
+    });
+    box.addEventListener("click", function (e) {
+      const clr = e.target.closest("[data-clear-photo]");
+      if (clr) {
+        const p = personById(clr.dataset.clearPhoto);
+        if (p) { p.dataUrl = null; delete images[p.id]; }
+        scheduleSave(); refreshAll();
+        return;
+      }
+      const rm = e.target.closest("[data-remove]");
+      if (rm) {
+        const p = personById(rm.dataset.remove);
+        const label = (p && p.name) ? p.name : "このキャスト";
+        if (!confirm(label + "を名簿から削除します。よろしいですか？")) return;
+        const id = rm.dataset.remove;
+        state.roster = state.roster.filter(function (x) { return x.id !== id; });
+        state.todayIds = state.todayIds.filter(function (x) { return x !== id; });
+        delete images[id];
+        scheduleSave(); refreshAll();
+      }
+    });
+    let drag = null;
+    function start(e, thumb) {
+      const id = thumb.dataset.pid;
+      if (!images[id]) return;
+      const rec = personById(id);
+      if (!rec) return;
+      const ev = e.touches ? e.touches[0] : e;
+      drag = { id: id, x: ev.clientX, y: ev.clientY, ox: rec.ox ?? 0.5, oy: rec.oy ?? 0.5, thumb: thumb };
+      e.preventDefault();
+    }
+    function move(e) {
+      if (!drag) return;
+      const ev = e.touches ? e.touches[0] : e;
+      const rec = personById(drag.id);
+      const img = images[drag.id];
+      if (!rec || !img) return;
+      const r = drag.thumb.getBoundingClientRect();
+      const scale = Math.max(r.width / img.width, r.height / img.height);
+      rec.ox = clamp(drag.ox - (ev.clientX - drag.x) / (img.width * scale), 0.15, 0.85);
+      rec.oy = clamp(drag.oy - (ev.clientY - drag.y) / (img.height * scale), 0.15, 0.85);
+      paintThumb(drag.thumb.querySelector("canvas"), rec);
+      e.preventDefault();
+    }
+    function end() {
+      if (!drag) return;
+      drag = null;
+      scheduleSave();
+      renderTodayList();
+      buildStatic();
+      redrawPoster();
+    }
+    box.addEventListener("mousedown", function (e) {
+      const thumb = e.target.closest(".thumb");
+      if (thumb) start(e, thumb);
+    });
+    box.addEventListener("touchstart", function (e) {
+      const thumb = e.target.closest(".thumb");
+      if (thumb) start(e, thumb);
+    }, { passive: false });
+    window.addEventListener("mousemove", move);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("mouseup", end);
+    window.addEventListener("touchend", end);
+  }
+
+  function bindTodayEvents() {
+    $("todayList").addEventListener("click", function (e) {
+      const mv = e.target.closest("[data-move]");
+      if (mv) {
+        moveToday(mv.dataset.move, Number(mv.dataset.dir));
+        scheduleSave(); refreshLists(); buildStatic(); redrawPoster();
+        return;
+      }
+      const off = e.target.closest("[data-untoggle]");
+      if (off) {
+        toggleToday(off.dataset.untoggle, false);
+        scheduleSave(); refreshLists(); buildStatic(); redrawPoster();
+      }
+    });
+  }
+
+  async function main() {
+    if (isLineBrowser() || isInAppBrowser()) {
+      $("lineBanner").classList.add("show");
+      if (!isLineBrowser()) {
+        $("lineBanner").innerHTML = "<strong>アプリ内ブラウザで開いています。</strong> 動画の保存ができないことがあります。右上のメニューから Safari または Chrome で開いてください。<div class=\"row\"><button type=\"button\" id=\"btnCopyUrl\">リンクをコピー</button></div>";
+      }
+    }
+    document.addEventListener("click", function (e) {
+      if (e.target && e.target.id === "btnCopyUrl") copyLink();
+    });
+
+    try { await openDb(); } catch (e) { console.warn("IndexedDB unavailable", e); }
+    await loadAll();
+    await ensureThemeLogo();
+    initSparkles();
+    bindRosterEvents();
+    bindTodayEvents();
+    refreshAll();
+    updateFormatHint();
+    try { await document.fonts.ready; buildStatic(); redrawPoster(); } catch (e) {}
+
+    $("storeName").addEventListener("input", function () {
+      state.storeName = $("storeName").value; scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("footerText").addEventListener("input", function () {
+      state.footer = $("footerText").value; scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("year").addEventListener("change", function () {
+      state.year = Number($("year").value); fillDateSelects(); scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("month").addEventListener("change", function () {
+      state.month = Number($("month").value); fillDateSelects(); scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("day").addEventListener("change", function () {
+      state.day = Number($("day").value); scheduleSave(); buildStatic(); redrawPoster();
+    });
+    document.querySelectorAll(".theme-btn").forEach(function (b) {
+      b.addEventListener("click", async function () {
+        state.theme = b.dataset.theme;
+        if (state.theme === "gojiai" && !(state.storeName || "").trim()) {
+          state.storeName = "ご自愛メシア";
+          $("storeName").value = state.storeName;
+        }
+        syncThemeButtons();
+        initSparkles();
+        await ensureThemeLogo();
+        scheduleSave();
+        buildStatic();
+        redrawPoster();
+      });
+    });
+    $("color1").addEventListener("input", function () { state.color1 = $("color1").value; scheduleSave(); buildStatic(); redrawPoster(); });
+    $("color2").addEventListener("input", function () { state.color2 = $("color2").value; scheduleSave(); buildStatic(); redrawPoster(); });
+    $("logoFile").addEventListener("change", async function (e) {
+      if (!e.target.files[0]) return;
+      state.logoData = await readFile(e.target.files[0], 600, 0.9);
+      await setLogo(state.logoData);
+      syncThemeButtons();
+      scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("btnClearLogo").addEventListener("click", function () {
+      state.logoData = ""; logoImg = null; $("logoFile").value = "";
+      syncThemeButtons();
+      scheduleSave(); buildStatic(); redrawPoster();
+    });
+    $("btnAddCast").addEventListener("click", function () {
+      addCast();
+      scheduleSave(); refreshLists();
+      const last = $("roster").lastElementChild;
+      if (last) last.scrollIntoView({ block: "center" });
+    });
+    $("bulkPhotos").addEventListener("change", async function (e) {
+      const files = Array.from(e.target.files || []);
+      e.target.value = "";
+      for (let i = 0; i < files.length; i++) {
+        const p = addCast();
+        const url = await readFile(files[i]);
+        p.dataUrl = url;
+        await setPersonImage(p.id, url);
+      }
+      scheduleSave(); refreshLists(); buildStatic(); redrawPoster();
+      setStatus(files.length + "人を名簿に追加しました。名前を入れてください。", "ok");
+    });
+    $("btnClearToday").addEventListener("click", function () {
+      if (!state.todayIds.length) return;
+      if (!confirm("本日の出勤選択をすべて外します。名簿はそのまま残ります。よろしいですか？")) return;
+      state.todayIds = [];
+      scheduleSave(); refreshAll();
+    });
+    $("sparkleAmt").addEventListener("click", function (e) {
+      const b = e.target.closest("[data-sparkle]");
+      if (!b) return;
+      state.sparkleAmount = b.dataset.sparkle;
+      syncSparkleButtons();
+      initSparkles();
+      scheduleSave();
+      redrawPoster();
+    });
+    $("btnPlay").addEventListener("click", function () { ensureAudio(); playPreview(); });
+    $("btnPng").addEventListener("click", async function () {
+      buildStatic();
+      drawFrame(wctx, currentDuration() - 1 / FPS);
+      blitPreview();
+      const blob = await new Promise(function (r) { work.toBlob(r, "image/png"); });
+      await maybeShare(blob, fileBase() + ".png", "本日の出勤");
+      setStatus("最終フレームのPNGを保存しました。", "ok");
+    });
+    $("btnVideo").addEventListener("click", async function () {
+      if (saving) return;
+      if (!todayPeople().length) {
+        setStatus("先に本日の出勤者を選んでください。", "warn");
+        return;
+      }
+      if (isLineBrowser()) {
+        setStatus("LINEの中では保存できないことがあります。Safari / Chrome で開いてから押してください。", "warn");
+      }
+      saving = true;
+      $("btnVideo").disabled = true;
+      stopPreview();
+      const sec = Math.round(currentDuration());
+      setStatus("動画を書き出しています… 約" + sec + "秒かかります。画面を閉じないでください。");
+      setProgress(0);
+      try {
+        const result = await recordVideo();
+        const ext = extFor(result.mime);
+        await maybeShare(result.blob, fileBase() + "." + ext, "本日の出勤");
+        if (ext === "webm") {
+          setStatus("WebMで保存しました。InstagramにはMP4が必要なので、可能ならiPhoneのSafariで開き直して保存してください。", "warn");
+        } else {
+          setStatus("MP4を保存しました。Instagramのストーリーズに上げられます。", "ok");
+        }
+      } catch (e) {
+        console.error(e);
+        setStatus(e.message || "書き出しに失敗しました。", "warn");
+      } finally {
+        saving = false;
+        $("btnVideo").disabled = false;
+        setProgress(null);
+        redrawPoster();
+      }
+    });
+    $("btnExport").addEventListener("click", async function () {
+      await saveAll();
+      const payload = Object.assign({ version: 1, logoData: state.logoData }, metaPayload());
+      payload.roster = state.roster.map(function (p) {
+        return { id: p.id, name: p.name || "", ox: p.ox ?? 0.5, oy: p.oy ?? 0.5, shift: p.shift || "", note: p.note || "", photo: p.dataUrl || null };
+      });
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      downloadBlob(blob, "shukkin_backup.json");
+      setStatus("バックアップを保存しました。", "ok");
+    });
+    $("importFile").addEventListener("change", async function (e) {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      if (!confirm("今の名簿と設定をバックアップの内容で上書きします。よろしいですか？")) return;
+      try {
+        const payload = JSON.parse(await f.text());
+        state.storeName = payload.storeName || "";
+        state.theme = payload.theme || "myumyu";
+        state.color1 = payload.color1 || state.color1;
+        state.color2 = payload.color2 || state.color2;
+        if (payload.sparkleAmount) state.sparkleAmount = payload.sparkleAmount;
+        state.year = payload.year || state.year;
+        state.month = payload.month || state.month;
+        state.day = payload.day || state.day;
+        state.footer = payload.footer || "";
+        state.logoData = payload.logoData || null;
+        await setLogo(state.logoData);
+        Object.keys(images).forEach(function (k) { delete images[k]; });
+        state.roster = [];
+        if (payload.roster) {
+          for (let i = 0; i < payload.roster.length; i++) {
+            const v = payload.roster[i];
+            const p = {
+              id: v.id || newId(),
+              name: v.name || "",
+              ox: v.ox ?? 0.5,
+              oy: v.oy ?? 0.5,
+              shift: v.shift || "",
+              note: v.note || "",
+              dataUrl: v.photo || null
+            };
+            state.roster.push(p);
+            if (p.dataUrl) await setPersonImage(p.id, p.dataUrl);
+          }
+        }
+        state.todayIds = Array.isArray(payload.todayIds) ? payload.todayIds.filter(function (id) { return !!personById(id); }) : [];
+        scheduleSave();
+        await ensureThemeLogo();
+        initSparkles();
+        refreshAll();
+        setStatus("バックアップを読み込みました。", "ok");
+      } catch (err) {
+        setStatus("読み込めませんでした。ファイルを確認してください。", "warn");
+      }
+    });
+    $("btnResetRoster").addEventListener("click", function () {
+      if (!confirm("名簿と本日の選択、写真をすべて消します。よろしいですか？")) return;
+      state.roster = [];
+      state.todayIds = [];
+      Object.keys(images).forEach(function (k) { delete images[k]; });
+      scheduleSave();
+      refreshAll();
+      setStatus("名簿を消しました。", "ok");
+    });
+
+    window.__SHUKKIN_TEST__ = {
+      state: state,
+      pickMime: pickMime,
+      extFor: extFor,
+      isLineBrowser: isLineBrowser,
+      timingFor: timingFor,
+      duration: currentDuration,
+      drawAt: function (t) { buildStatic(); drawFrame(wctx, t); blitPreview(); return work.toDataURL("image/png"); },
+      setupSample: setupSample,
+      exportVideo: function () { return recordVideo(); },
+      exportPng: async function () {
+        buildStatic(); drawFrame(wctx, currentDuration() - 1 / FPS);
+        return await new Promise(function (r) { work.toBlob(r, "image/png"); });
+      }
+    };
+  }
+
+  const SAMPLE_NAMES = ["さくら","みお","ひな","ゆい","あかり","なな","りお","まお","こはる","あい","ゆな","れい"];
+  const SAMPLE_SHIFTS = ["17:00〜LAST","18:00〜LAST","19:00〜22:00","18:00〜LAST","","17:00〜LAST","18:00〜23:00","","19:00〜LAST","18:00〜LAST","17:00〜22:00",""];
+  const SAMPLE_NOTES = ["","","新人","","","体験","","","","新人","",""];
+
+  function makePlaceholderData(index, themeName) {
+    const c = document.createElement("canvas");
+    c.width = 600; c.height = 720;
+    const ctx = c.getContext("2d");
+    const h2rgb = function (h, s, v) {
+      const f = function (n) { const k = (n + h / 60) % 6; return v - v * s * Math.max(Math.min(k, 4 - k, 1), 0); };
+      return [f(5) * 255, f(3) * 255, f(1) * 255].map(function (x) { return x | 0; });
+    };
+    const mesia = themeName === "gojiai";
+    const hue = mesia ? (185 + (index * 13) % 50) : (320 + (index * 17) % 80);
+    const top = h2rgb(hue, mesia ? 0.22 : 0.3, 0.70);
+    const bot = h2rgb(hue + 12, mesia ? 0.40 : 0.55, 0.30);
+    verticalGradient(ctx, 0, 0, 600, 720, top, bot);
+    ctx.fillStyle = "rgba(40,10,20,0.75)";
+    ctx.beginPath(); ctx.ellipse(300, 270, 110, 115, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(80, 740); ctx.lineTo(130, 430); ctx.lineTo(230, 410); ctx.lineTo(300, 390);
+    ctx.lineTo(370, 410); ctx.lineTo(470, 430); ctx.lineTo(520, 740); ctx.closePath(); ctx.fill();
+    fillRound(ctx, 90, 560, 420, 80, 10, "rgba(0,0,0,0.5)");
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 42px Cinzel, serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("SAMPLE", 300, 600);
+    return c.toDataURL("image/jpeg", 0.85);
+  }
+
+  async function setupSample(n, opts) {
+    opts = opts || {};
+    n = Math.max(1, Math.min(MAX_TODAY, n || 6));
+    state.theme = opts.theme || "myumyu";
+    state.sparkleAmount = opts.sparkleAmount || "high";
+    state.year = opts.year || 2026;
+    state.month = opts.month || 11;
+    state.day = opts.day || 26;
+    state.storeName = opts.storeName || (state.theme === "gojiai" ? "ご自愛メシア" : "Myu Myu 川崎");
+    state.footer = opts.footer != null ? opts.footer : (state.theme === "gojiai" ? "17:00〜LAST  |  @gozimesi_akb" : "17:00〜LAST  |  @myumyu_kawasaki");
+    if (opts.useThemeLogo) state.logoData = null;
+    await ensureThemeLogo();
+    state.roster = [];
+    state.todayIds = [];
+    Object.keys(images).forEach(function (k) { delete images[k]; });
+    for (let i = 0; i < n; i++) {
+      const url = makePlaceholderData(i, state.theme);
+      const p = addCast({
+        name: SAMPLE_NAMES[i % SAMPLE_NAMES.length],
+        shift: SAMPLE_SHIFTS[i % SAMPLE_SHIFTS.length],
+        note: SAMPLE_NOTES[i % SAMPLE_NOTES.length],
+        dataUrl: url
+      });
+      await setPersonImage(p.id, url);
+      state.todayIds.push(p.id);
+    }
+    initSparkles();
+    refreshAll();
+    return true;
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", main);
+  else main();
+})();
+</script>
+</body>
+</html>

@@ -1193,19 +1193,58 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     ctx.restore();
     if (img) drawCoverClipped(ctx, img, x, y, w, h, r, ox, oy, b, css(theme.cellBorder));
   }
-  function drawBanner(ctx, name, u, alpha) {
-    const L = layout;
-    const last = L.nDays;
-    const d0 = Math.max(1, last - 2);
-    const b0 = L.photoBox(d0), b1 = L.photoBox(last);
+  function inGridBannerBox(L) {
+    const n = L.nDays, cols = L.cols;
+    const rem = n % cols === 0 ? cols : (n % cols);
+    // Keep the plate on a single row. 31-day months leave day 31 alone
+    // on a 7th row, so the in-grid plate uses the rightmost 3 of row 6.
+    let end, start;
+    if (rem >= 3) {
+      end = n;
+      start = end - 2;
+    } else {
+      end = n - rem;
+      start = end - 2;
+    }
+    const b0 = L.photoBox(start), b1 = L.photoBox(end);
     const pad = 4;
-    const x0 = b0[0]-pad, y0 = b0[1]-pad, x1 = b1[2]+pad, y1 = b1[3]+pad;
+    return [b0[0]-pad, b0[1]-pad, b1[2]+pad, b1[3]+pad, start, end];
+  }
+  function bannerCoversToday() {
+    const L = layout;
+    const ig = inGridBannerBox(L);
+    const today = state.today;
+    if (today >= L.nDays - 2) return true;
+    return today >= ig[4] && today <= ig[5];
+  }
+  function bannerBaseRect() {
+    const L = layout;
+    const ig = inGridBannerBox(L);
+    const x0 = ig[0], y0 = ig[1], x1 = ig[2], y1 = ig[3];
+    const bw = x1 - x0, bh = y1 - y0;
+    if (!bannerCoversToday()) return [x0, y0, x1, y1];
+    const gridBottomY = L.gridY + L.gridH;
+    const cloudReserve = (theme && theme.clouds) ? 120 : 48;
+    const gap = 18;
+    let by0 = gridBottomY + gap;
+    let by1 = by0 + bh;
+    const maxY = H - cloudReserve;
+    if (by1 > maxY) {
+      by0 = Math.max(gridBottomY + 8, maxY - bh);
+      by1 = by0 + bh;
+    }
+    return [x0, by0, x1, by1];
+  }
+  function drawBanner(ctx, name, u) {
+    const L = layout;
+    const base = bannerBaseRect();
+    const x0 = base[0], y0 = base[1], x1 = base[2], y1 = base[3];
     const bw = x1-x0, bh = y1-y0;
     const scale = 0.86 + 0.14 * Math.min(1, u);
     const nw = bw * scale, nh = bh * scale;
     const x = x0 + (bw-nw)/2, y = y0 + (bh-nh)/2;
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = 1;
     const bg = theme.bannerBg;
     ctx.globalCompositeOperation = "source-over";
     fillRound(ctx, x, y, nw, nh, Math.max(10, L.radius+2), css(bg.slice(0,3), 1));
@@ -1265,8 +1304,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     drawSparkles(ctx, t);
     if (t >= BANNER_AT) {
       const u = easeOutBack(Math.min(1, (t - BANNER_AT) / 0.45));
-      const a = Math.min(1, (t - BANNER_AT) / 0.25);
-      drawBanner(ctx, state.winnerName, u, a);
+      drawBanner(ctx, state.winnerName, u);
     }
   }
   function blitPreview() {
@@ -1855,15 +1893,23 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
         opts = opts || {};
         state.theme = opts.theme || "myumyu";
         state.sparkleAmount = opts.sparkleAmount || "high";
-        state.year = 2026; state.month = 11; state.today = 25;
+        state.year = opts.year || 2026;
+        state.month = opts.month || 11;
+        const nDays = daysInMonth(state.year, state.month);
+        state.today = Math.min(opts.today || 25, nDays);
         state.storeName = opts.storeName || (state.theme === "gojiai" ? "ご自愛メシア" : "Myu Myu 川崎");
         state.winnerName = winnerName || "サンプル";
         if (opts.useThemeLogo) state.logoData = null;
         await ensureThemeLogo();
-        for (let d = 1; d <= 25; d++) {
-          const url = makePlaceholderData(d, d === 25);
-          state.days[d] = { name: d === 25 ? state.winnerName : "", ox: 0.5, oy: 0.5, dataUrl: url };
-          await setDayImage(d, url);
+        const fillUntil = opts.fillUntil != null ? opts.fillUntil : state.today;
+        state.days = {};
+        Object.keys(images).forEach(function (k) { delete images[k]; });
+        for (let d = 1; d <= nDays; d++) {
+          if (d <= fillUntil) {
+            const url = makePlaceholderData(d, d === state.today);
+            state.days[d] = { name: d === state.today ? state.winnerName : "", ox: 0.5, oy: 0.5, dataUrl: url };
+            await setDayImage(d, url);
+          }
         }
         initSparkles();
         refreshAll();

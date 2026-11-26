@@ -577,12 +577,19 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       state.color2 = all.settings.color2 || state.color2;
       if (all.settings.sparkleAmount) state.sparkleAmount = all.settings.sparkleAmount;
     }
-    if (all.current) {
-      const parts = all.current.split("-").map(Number);
-      if (parts[0] && parts[1]) { state.year = parts[0]; state.month = parts[1]; }
-    }
+    // Always open on the device's current year/month/today.
+    // Last-used month (all.current) and saved meta.today are ignored on load
+    // so a returning user lands on this month; past months stay reachable
+    // via the year/month selectors, and JSON restore may still jump months.
+    const nowOpen = new Date();
+    state.year = nowOpen.getFullYear();
+    state.month = nowOpen.getMonth() + 1;
     const meta = (all.months && all.months[monthKey()]) || null;
     if (meta) applyMeta(meta);
+    state.year = nowOpen.getFullYear();
+    state.month = nowOpen.getMonth() + 1;
+    const nOpen = daysInMonth(state.year, state.month);
+    state.today = Math.min(Math.max(1, nowOpen.getDate()), nOpen);
     const pack = await idbGet(monthKey());
     if (pack) {
       if (pack.logo) { state.logoData = pack.logo; await setLogo(pack.logo); }

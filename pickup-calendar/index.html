@@ -144,6 +144,17 @@ input[type="color"] { height: 42px; padding: 4px; }
 .progress.show { display: block; }
 .progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
 footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 10px 8px 20px; }
+
+input[type="range"] {
+  width: 100%; height: 28px; accent-color: var(--accent);
+}
+.bg-adjust { display: flex; gap: 12px; align-items: flex-start; margin-top: 10px; }
+.bg-adjust[hidden] { display: none !important; }
+#bgThumb {
+  width: 90px; height: 160px; border-radius: 10px; background: #1a0c11;
+  border: 1px solid var(--line); touch-action: none; cursor: grab; flex: 0 0 auto;
+}
+.bg-sliders { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -188,6 +199,31 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       </label>
       <p class="hint" id="logoHint"></p>
       <div class="btn-row"><button type="button" class="btn btn-ghost" id="btnClearLogo">ロゴをはずす</button></div>
+    </div>
+
+    <div class="fld" style="margin-top:14px">
+      <span>背景</span>
+      <div class="seg" id="bgModeSeg" role="radiogroup" aria-label="背景">
+        <button type="button" data-bg="theme" class="on">テーマの背景</button>
+        <button type="button" data-bg="photo">写真を背景にする</button>
+      </div>
+    </div>
+    <div id="bgPhotoRow" class="custom-row">
+      <div class="btn-row">
+        <label class="btn btn-dark" for="bgPhoto">背景の写真を選ぶ</label>
+        <input type="file" id="bgPhoto" accept="image/*" class="hidden">
+        <button type="button" class="btn btn-ghost" id="btnClearBg">写真をはずす</button>
+      </div>
+      <p class="hint">写真は画面いっぱいに合わせて切り抜きます。右のつまみか、左のプレビューをドラッグして位置を直せます。暗さとぼかしで文字を読みやすくできます。</p>
+      <div class="bg-adjust" id="bgAdjust" hidden>
+        <canvas id="bgThumb" width="135" height="240"></canvas>
+        <div class="bg-sliders">
+          <label class="fld"><span>左右</span><input type="range" id="bgOx" min="15" max="85" value="50"></label>
+          <label class="fld"><span>上下</span><input type="range" id="bgOy" min="15" max="85" value="50"></label>
+          <label class="fld"><span>暗さ</span><input type="range" id="bgDark" min="0" max="80" value="40"></label>
+          <label class="fld"><span>ぼかし</span><input type="range" id="bgBlur" min="0" max="24" value="8"></label>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -471,6 +507,12 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     today: now.getDate(),
     winnerName: "",
     sparkleAmount: "high",
+    bgMode: "theme",
+    bgData: null,
+    bgOx: 0.5,
+    bgOy: 0.5,
+    bgDark: 0.40,
+    bgBlur: 8,
     days: {}
   };
   let layout = computeLayout(daysInMonth(state.year, state.month));
@@ -533,7 +575,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
   async function saveAll() {
     try {
       const all = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-      all.settings = { theme: state.theme, color1: state.color1, color2: state.color2, storeName: state.storeName, sparkleAmount: state.sparkleAmount };
+      all.settings = Object.assign({ theme: state.theme, color1: state.color1, color2: state.color2, storeName: state.storeName, sparkleAmount: state.sparkleAmount }, bgSettings());
       all.current = monthKey();
       all.months = all.months || {};
       all.months[monthKey()] = metaPayload();
@@ -545,6 +587,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       if (v && v.dataUrl) pack.days[k] = v.dataUrl;
     }
     try { await idbSet(monthKey(), pack); } catch (e) { console.warn("idb", e); }
+    try { await idbSet(BG_IDB_KEY, { data: state.bgData || null }); } catch (e) { console.warn("idb bg", e); }
   }
   function applyMeta(meta) {
     if (!meta) return;
@@ -576,6 +619,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       state.color1 = all.settings.color1 || state.color1;
       state.color2 = all.settings.color2 || state.color2;
       if (all.settings.sparkleAmount) state.sparkleAmount = all.settings.sparkleAmount;
+      applyBgSettings(all.settings);
     }
     // Always open on the device's current year/month/today.
     // Last-used month (all.current) and saved meta.today are ignored on load
@@ -590,6 +634,10 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     state.month = nowOpen.getMonth() + 1;
     const nOpen = daysInMonth(state.year, state.month);
     state.today = Math.min(Math.max(1, nowOpen.getDate()), nOpen);
+    try {
+      const bgPack = await idbGet(BG_IDB_KEY);
+      if (bgPack && bgPack.data) await setBgImage(bgPack.data);
+    } catch (e) { console.warn("idb bg", e); }
     const pack = await idbGet(monthKey());
     if (pack) {
       if (pack.logo) { state.logoData = pack.logo; await setLogo(pack.logo); }
@@ -1013,46 +1061,120 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     return THEMES[state.theme] || THEMES.myumyu;
   }
 
-  function buildStatic() {
-    theme = currentTheme();
-    const n = daysInMonth(state.year, state.month);
-    layout = computeLayout(n);
-    const c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    const ctx = c.getContext("2d");
-    verticalGradient(ctx, 0, 0, W, H, theme.bgTop, theme.bgBottom);
-    radial(ctx, W*0.5, H*0.12, W*0.85, theme.glowB, theme.light ? 0.28 : 0.40);
-    radial(ctx, W*0.08, H*0.55, W*0.7, theme.glowA, theme.light ? 0.22 : 0.35);
-    radial(ctx, W*0.9, H*0.8, W*0.6, theme.glowC, theme.light ? 0.2 : 0.3);
+  const BG_IDB_KEY = "__bg";
+  let bgImg = null;
+
+  function usePhotoBg() {
+    return state.bgMode === "photo" && !!bgImg;
+  }
+  function bgSettings() {
+    return {
+      bgMode: state.bgMode || "theme",
+      bgOx: state.bgOx ?? 0.5,
+      bgOy: state.bgOy ?? 0.5,
+      bgDark: state.bgDark ?? 0.40,
+      bgBlur: state.bgBlur ?? 8,
+      hasBg: !!state.bgData
+    };
+  }
+  function applyBgSettings(s) {
+    if (!s) return;
+    if (s.bgMode === "photo" || s.bgMode === "theme") state.bgMode = s.bgMode;
+    if (s.bgOx != null) state.bgOx = clamp(Number(s.bgOx), 0.15, 0.85);
+    if (s.bgOy != null) state.bgOy = clamp(Number(s.bgOy), 0.15, 0.85);
+    if (s.bgDark != null) state.bgDark = clamp(Number(s.bgDark), 0, 0.8);
+    if (s.bgBlur != null) state.bgBlur = clamp(Number(s.bgBlur), 0, 24);
+  }
+  async function setBgImage(dataUrl) {
+    if (!dataUrl) { state.bgData = null; bgImg = null; return; }
+    state.bgData = dataUrl;
+    try { bgImg = await loadImage(dataUrl); }
+    catch (e) { bgImg = null; }
+  }
+  function photoChromeTheme(th) {
+    if (!usePhotoBg()) return th;
+    return Object.assign({}, th, {
+      light: false,
+      textShadow: false,
+      header: [255, 255, 255, 250],
+      subheader: [255, 245, 250],
+      vertical: [255, 255, 255, 230],
+      accentLight: [255, 245, 250]
+    });
+  }
+  function paintBgThumb() {
+    const cv = $("bgThumb");
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    if (!bgImg) return;
     ctx.save();
-    ctx.strokeStyle = css(theme.gold, theme.light ? 0.22 : 0.28);
+    const blur = state.bgBlur || 0;
+    if (blur > 0) ctx.filter = "blur(" + Math.max(0.5, blur * cv.width / W) + "px)";
+    const pad = blur > 0 ? 6 : 0;
+    drawCover(ctx, bgImg, -pad, -pad, cv.width + pad * 2, cv.height + pad * 2, state.bgOx, state.bgOy);
+    ctx.restore();
+    if ((state.bgDark || 0) > 0) {
+      ctx.fillStyle = "rgba(0,0,0," + state.bgDark + ")";
+      ctx.fillRect(0, 0, cv.width, cv.height);
+    }
+  }
+  function syncBgUI() {
+    document.querySelectorAll("#bgModeSeg [data-bg]").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.bg === (state.bgMode || "theme"));
+    });
+    const row = $("bgPhotoRow");
+    if (row) row.classList.toggle("show", state.bgMode === "photo");
+    const adj = $("bgAdjust");
+    if (adj) {
+      if (state.bgMode === "photo" && state.bgData) adj.removeAttribute("hidden");
+      else adj.setAttribute("hidden", "");
+    }
+    const ox = $("bgOx"), oy = $("bgOy"), dk = $("bgDark"), bl = $("bgBlur");
+    if (ox) ox.value = String(Math.round((state.bgOx ?? 0.5) * 100));
+    if (oy) oy.value = String(Math.round((state.bgOy ?? 0.5) * 100));
+    if (dk) dk.value = String(Math.round((state.bgDark ?? 0.40) * 100));
+    if (bl) bl.value = String(state.bgBlur ?? 8);
+    paintBgThumb();
+  }
+  function drawCornerOrnaments(ctx, th) {
+    ctx.save();
+    ctx.strokeStyle = css(th.gold, th.light ? 0.22 : 0.28);
     ctx.lineWidth = 2;
     const corners = [[24,24,1,1],[W-24,24,-1,1],[24,H-24,1,-1],[W-24,H-24,-1,-1]];
     for (let i = 0; i < corners.length; i++) {
       const x = corners[i][0], y = corners[i][1], sx = corners[i][2], sy = corners[i][3];
-      const rads = [40,70,100];
+      const rads = [40, 70, 100];
       for (let j = 0; j < rads.length; j++) {
         const rad = rads[j];
         ctx.beginPath();
         let start = 0, end = 0;
-        if (sx>0 && sy>0) { start=Math.PI; end=Math.PI*1.5; }
-        else if (sx<0 && sy>0) { start=Math.PI*1.5; end=Math.PI*2; }
-        else if (sx>0 && sy<0) { start=Math.PI*0.5; end=Math.PI; }
-        else { start=0; end=Math.PI*0.5; }
+        if (sx > 0 && sy > 0) { start = Math.PI; end = Math.PI * 1.5; }
+        else if (sx < 0 && sy > 0) { start = Math.PI * 1.5; end = Math.PI * 2; }
+        else if (sx > 0 && sy < 0) { start = Math.PI * 0.5; end = Math.PI; }
+        else { start = 0; end = Math.PI * 0.5; }
         ctx.arc(x, y, rad, start, end);
         ctx.stroke();
       }
     }
     ctx.restore();
-    if (theme.clouds) {
+  }
+  function drawThemeBackdrop(ctx, th) {
+    verticalGradient(ctx, 0, 0, W, H, th.bgTop, th.bgBottom);
+    radial(ctx, W * 0.5, H * 0.12, W * 0.85, th.glowB, th.light ? 0.28 : 0.40);
+    radial(ctx, W * 0.08, H * 0.55, W * 0.7, th.glowA, th.light ? 0.22 : 0.35);
+    radial(ctx, W * 0.9, H * 0.8, W * 0.6, th.glowC, th.light ? 0.2 : 0.3);
+    drawCornerOrnaments(ctx, th);
+    if (th.clouds) {
       drawCloudBand(ctx, true);
       drawCloudBand(ctx, false);
     }
-    const vig = ctx.createRadialGradient(W/2, H*0.48, W*0.25, W/2, H*0.48, W*0.85);
-    if (theme.vignette === "mist") {
+    const vig = ctx.createRadialGradient(W / 2, H * 0.48, W * 0.25, W / 2, H * 0.48, W * 0.85);
+    if (th.vignette === "mist") {
       vig.addColorStop(0, "rgba(255,255,255,0)");
       vig.addColorStop(1, "rgba(255,255,255,0.18)");
-    } else if (theme.light) {
+    } else if (th.light) {
       vig.addColorStop(0, "rgba(0,0,0,0)");
       vig.addColorStop(1, "rgba(40,50,70,0.18)");
     } else {
@@ -1060,7 +1182,132 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       vig.addColorStop(1, "rgba(0,0,0,0.55)");
     }
     ctx.fillStyle = vig;
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0, 0, W, H);
+  }
+  function drawPhotoBackdrop(ctx, th) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    const blur = state.bgBlur || 0;
+    if (blur > 0) ctx.filter = "blur(" + blur + "px)";
+    const pad = blur > 0 ? blur * 2 : 0;
+    drawCover(ctx, bgImg, -pad, -pad, W + pad * 2, H + pad * 2, state.bgOx, state.bgOy);
+    ctx.restore();
+    const dark = state.bgDark ?? 0.40;
+    if (dark > 0) {
+      ctx.fillStyle = "rgba(0,0,0," + dark + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+    drawCornerOrnaments(ctx, th);
+  }
+  function drawBackdrop(ctx, th) {
+    if (usePhotoBg()) drawPhotoBackdrop(ctx, th);
+    else drawThemeBackdrop(ctx, th);
+  }
+  async function assignBgPhoto(file) {
+    const url = await readFile(file, 1440, 0.85);
+    state.bgMode = "photo";
+    state.bgOx = 0.5;
+    state.bgOy = 0.5;
+    await setBgImage(url);
+    scheduleSave();
+    syncBgUI();
+    buildStatic();
+    redrawPoster();
+  }
+  function clearBgPhoto() {
+    state.bgMode = "theme";
+    state.bgData = null;
+    bgImg = null;
+    const inp = $("bgPhoto");
+    if (inp) inp.value = "";
+    scheduleSave();
+    syncBgUI();
+    buildStatic();
+    redrawPoster();
+  }
+  function bindBgControls() {
+    document.querySelectorAll("#bgModeSeg [data-bg]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.bgMode = b.dataset.bg;
+        scheduleSave();
+        syncBgUI();
+        buildStatic();
+        redrawPoster();
+      });
+    });
+    $("bgPhoto").addEventListener("change", async function (e) {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (f) await assignBgPhoto(f);
+    });
+    $("btnClearBg").addEventListener("click", function () { clearBgPhoto(); });
+    function readSliders() {
+      const ox = $("bgOx"), oy = $("bgOy"), dk = $("bgDark"), bl = $("bgBlur");
+      if (ox) state.bgOx = clamp(Number(ox.value) / 100, 0.15, 0.85);
+      if (oy) state.bgOy = clamp(Number(oy.value) / 100, 0.15, 0.85);
+      if (dk) state.bgDark = clamp(Number(dk.value) / 100, 0, 0.8);
+      if (bl) state.bgBlur = clamp(Number(bl.value), 0, 24);
+    }
+    ["bgOx", "bgOy", "bgDark", "bgBlur"].forEach(function (id) {
+      $(id).addEventListener("input", function () {
+        readSliders();
+        paintBgThumb();
+        buildStatic();
+        redrawPoster();
+      });
+      $(id).addEventListener("change", function () {
+        readSliders();
+        scheduleSave();
+        buildStatic();
+        redrawPoster();
+      });
+    });
+    const cv = $("bgThumb");
+    let drag = null;
+    function start(e) {
+      if (!bgImg || state.bgMode !== "photo") return;
+      const ev = e.touches ? e.touches[0] : e;
+      drag = { x: ev.clientX, y: ev.clientY, ox: state.bgOx, oy: state.bgOy };
+      e.preventDefault();
+    }
+    function move(e) {
+      if (!drag) return;
+      const ev = e.touches ? e.touches[0] : e;
+      const r = cv.getBoundingClientRect();
+      const scale = Math.max(r.width / bgImg.width, r.height / bgImg.height);
+      state.bgOx = clamp(drag.ox - (ev.clientX - drag.x) / (bgImg.width * scale), 0.15, 0.85);
+      state.bgOy = clamp(drag.oy - (ev.clientY - drag.y) / (bgImg.height * scale), 0.15, 0.85);
+      const ox = $("bgOx"), oy = $("bgOy");
+      if (ox) ox.value = String(Math.round(state.bgOx * 100));
+      if (oy) oy.value = String(Math.round(state.bgOy * 100));
+      paintBgThumb();
+      buildStatic();
+      redrawPoster();
+      e.preventDefault();
+    }
+    function end() {
+      if (!drag) return;
+      drag = null;
+      scheduleSave();
+    }
+    cv.addEventListener("pointerdown", start);
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", end);
+    cv.addEventListener("touchstart", start, { passive: false });
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+  }
+
+
+  function buildStatic() {
+    theme = currentTheme();
+    const n = daysInMonth(state.year, state.month);
+    layout = computeLayout(n);
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d");
+    drawBackdrop(ctx, theme);
 
     const L = layout;
     for (let day = 1; day <= n; day++) {
@@ -1104,19 +1351,20 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       ctx.fillText("day"+day, (lb[0]+lb[2])/2, (lb[1]+lb[3])/2);
     }
 
+    const chrome = photoChromeTheme(theme);
     const header = MONTHS_EN[state.month] + " " + state.year;
     ctx.save();
     ctx.font = "600 " + Math.max(64, (W*0.092)|0) + "px " + FONTS.display;
-    ctx.fillStyle = css(theme.header.slice(0,3), (theme.header[3]||200)/255);
+    ctx.fillStyle = css(chrome.header.slice(0,3), (chrome.header[3]||200)/255);
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    if (theme.textShadow) {
+    if (chrome.textShadow) {
       ctx.shadowColor = "rgba(20, 70, 95, 0.55)";
       ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 2;
     } else {
-      ctx.shadowColor = css(theme.header.slice(0,3), 0.25);
-      ctx.shadowBlur = 8;
+      ctx.shadowColor = usePhotoBg() ? "rgba(0,0,0,0.65)" : css(chrome.header.slice(0,3), 0.25);
+      ctx.shadowBlur = usePhotoBg() ? 14 : 8;
     }
     trackText(ctx, header, W*0.52, L.headerY, W*0.006, "center");
     ctx.restore();
@@ -1124,12 +1372,15 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     if (state.storeName) {
       ctx.save();
       ctx.font = "500 " + Math.max(18, (W*0.022)|0) + "px " + FONTS.sans;
-      ctx.fillStyle = css(theme.subheader, 0.9);
+      ctx.fillStyle = css(chrome.subheader, 0.9);
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
-      if (theme.textShadow) {
+      if (chrome.textShadow) {
         ctx.shadowColor = "rgba(255,255,255,0.8)";
         ctx.shadowBlur = 6;
+      } else if (usePhotoBg()) {
+        ctx.shadowColor = "rgba(0,0,0,0.65)";
+        ctx.shadowBlur = 8;
       }
       ctx.fillText(state.storeName, W*0.5, L.headerY - 4);
       ctx.restore();
@@ -1166,15 +1417,18 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     const vert = "#本日のPICK-UP CALENDAR";
     ctx.save();
     ctx.font = "400 " + Math.max(24, (W*0.028)|0) + "px " + FONTS.sans;
-    ctx.fillStyle = css(theme.vertical.slice(0,3), (theme.vertical[3]||200)/255);
+    ctx.fillStyle = css(chrome.vertical.slice(0,3), (chrome.vertical[3]||200)/255);
     ctx.translate(L.gridX + L.gridW + W*0.042, L.gridY + L.gridH/2);
     ctx.rotate(Math.PI/2);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    if (theme.textShadow) {
+    if (chrome.textShadow) {
       ctx.shadowColor = "rgba(20, 70, 95, 0.45)";
       ctx.shadowBlur = 8;
       ctx.shadowOffsetY = 1;
+    } else if (usePhotoBg()) {
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 8;
     }
     trackText(ctx, vert, 0, 0, 3, "center");
     ctx.restore();
@@ -1623,6 +1877,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     $("color2").value = state.color2;
     syncThemeButtons();
     syncSparkleButtons();
+    syncBgUI();
     renderDayCards();
     buildStatic();
     redrawPoster();
@@ -1731,6 +1986,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     initSparkles();
     fillMonthSelects();
     bindDayListEvents();
+    bindBgControls();
     refreshAll();
     updateFormatHint();
     try { await document.fonts.ready; buildStatic(); redrawPoster(); } catch (e) {}
@@ -1840,7 +2096,7 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
     });
     $("btnExport").addEventListener("click", async function () {
       await saveAll();
-      const payload = Object.assign({ version: 1, logoData: state.logoData, days: {} }, metaPayload());
+      const payload = Object.assign({ version: 1, logoData: state.logoData, days: {}, bgData: state.bgData || null }, metaPayload(), bgSettings());
       for (const k of Object.keys(state.days)) {
         const v = state.days[k];
         payload.days[k] = { name: v.name||"", ox: v.ox??0.5, oy: v.oy??0.5, photo: v.dataUrl||null };
@@ -1866,6 +2122,11 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
         state.winnerName = payload.winnerName || "";
         state.logoData = payload.logoData || null;
         await setLogo(state.logoData);
+        if (payload.bgMode || payload.bgData || payload.bgDark != null) {
+          applyBgSettings(payload);
+          await setBgImage(payload.bgData || null);
+          if (!payload.bgMode && payload.bgData) state.bgMode = "photo";
+        }
         state.days = {};
         Object.keys(images).forEach(function (k) { delete images[k]; });
         if (payload.days) {
@@ -1926,6 +2187,24 @@ footer.note { font-size: 0.75rem; color: var(--muted); text-align: center; paddi
       exportPng: async function () {
         buildStatic(); drawFrame(wctx, DURATION-1/FPS);
         return await new Promise(function (r) { work.toBlob(r, "image/png"); });
+      },
+      setBackground: async function (opts) {
+        opts = opts || {};
+        if (opts.clear) {
+          state.bgMode = "theme";
+          await setBgImage(null);
+        } else {
+          if (opts.mode) state.bgMode = opts.mode;
+          if (opts.dataUrl) await setBgImage(opts.dataUrl);
+          if (opts.ox != null) state.bgOx = clamp(opts.ox, 0.15, 0.85);
+          if (opts.oy != null) state.bgOy = clamp(opts.oy, 0.15, 0.85);
+          if (opts.dark != null) state.bgDark = clamp(opts.dark, 0, 0.8);
+          if (opts.blur != null) state.bgBlur = clamp(opts.blur, 0, 24);
+        }
+        syncBgUI();
+        buildStatic();
+        redrawPoster();
+        return true;
       }
     };
   }
